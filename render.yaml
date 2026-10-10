@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: nova
+    runtime: docker
+    plan: starter          # siempre encendido: necesario para recordatorios y avisos de correo
+    healthCheckPath: /api/ping
+    disk:
+      name: nova-datos
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NOVA_PASSWORD
+        sync: false
+      - key: CLAUDE_CODE_OAUTH_TOKEN
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: NOVA_DATA_DIR
+        value: /data
+      - key: NOVA_VOICE_ID
+        value: ojGau167OE7nUATM1xDa
+      - key: GMAIL_WATCH_SENDERS
+        value: carlosdrz09@colegiopadreemilianotardif.edu.do,carlossdavid0307@gmail.com

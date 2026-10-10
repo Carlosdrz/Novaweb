@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#030a14">
+<title>NOVA</title>
+<link rel="icon" href="/icono.svg" type="image/svg+xml">
+<link rel="manifest" href="/nova.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+<main id="login" hidden>
+  <form id="loginForm" class="login">
+    <div class="marca" aria-label="NOVA">NOVA</div>
+    <label for="pw" class="sr">Contraseña</label>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Contraseña" required>
+    <button type="submit">Entrar</button>
+    <p id="loginErr" class="err" role="alert"></p>
+  </form>
+</main>
+
+<div id="app" class="app" hidden>
+  <header class="top">
+    <div class="marca" aria-label="NOVA">NOVA</div>
+    <div class="estado"><span id="punto" class="punto"></span><span id="estadoTxt">En línea</span></div>
+  </header>
+
+  <nav class="izq" aria-label="Controles">
+    <button id="nuevo" class="nav">Nueva conversación</button>
+    <button id="vozBtn" class="nav on" aria-pressed="true">Respuestas habladas</button>
+    <button id="escBtn" class="nav" aria-pressed="false">Escucha: diga «Nova»</button>
+    <button id="salir" class="nav suave">Salir</button>
+  </nav>
+
+  <section class="centro">
+    <div id="log" class="log" aria-live="polite"></div>
+    <p id="aviso" class="aviso" role="alert" hidden></p>
+    <form id="form" class="entrada">
+      <button type="button" id="mic" class="mic" aria-label="Hablar" title="Hablar">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+      <input id="txt" autocomplete="off" placeholder="Escriba o hable…" aria-label="Mensaje">
+      <button type="submit" id="enviar" class="enviar" aria-label="Enviar">Enviar</button>
+      <button type="button" id="parar" class="parar" aria-label="Detener" hidden>Detener</button>
+    </form>
+  </section>
+
+  <aside class="der" aria-label="Estado">
+    <div class="caja"><h2>Tiempo de respuesta</h2><p id="lat" class="num">—</p></div>
+    <div class="caja"><h2>Voz</h2><p id="vozInfo" class="num peq">Navegador</p></div>
+    <div class="caja"><h2>Recordatorios</h2><ul id="recs" class="recs"><li class="tenue">Ninguno</li></ul></div>
+    <p id="cuenta" hidden>0</p>
+  </aside>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
