@@ -17,10 +17,8 @@ async function arrancar() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { avisar(); cargarRecs() } })
   document.addEventListener('pointerdown', desbloquear, { once: true })
   // Micrófono: si ya está permitido (o lo dejó activado), Nova escucha su nombre sin más pasos.
-  let quiere = false; try { quiere = localStorage.getItem('nova-escucha') === '1' } catch {}
-  let perm = 'prompt'; try { perm = (await navigator.permissions.query({ name: 'microphone' })).state } catch {}
-  if (SR && (quiere || perm === 'granted')) activarEscucha(true)
-  if (perm === 'granted' || quiere) iniciarClap()
+  let apagado = false; try { apagado = localStorage.getItem('nova-escucha') === '0' } catch {}
+  if (SR && !apagado) activarEscucha(true)
 }
 async function cargarRecs() {
   try {
@@ -80,6 +78,8 @@ $('vozBtn').onclick = () => { state.voz = !state.voz; $('vozBtn').classList.togg
 const player = new Audio()
 let cola = [], hablando = false, genVoz = 0
 function desbloquear() {
+  try { if (!window.__conectado) { window.__conectado = true; window.novaConectarAudio?.(player) } } catch {}
+  try { window.__novaAC?.resume() } catch {}
   try { player.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='; player.play().catch(() => {}) } catch {}
   try { speechSynthesis.getVoices() } catch {}
 }

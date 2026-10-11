@@ -17,7 +17,7 @@ button{cursor:pointer}
 .login button{background:linear-gradient(180deg,#0f4a73,#0a3556);border:1px solid var(--cian);border-radius:10px;padding:12px;color:#fff;letter-spacing:.08em}
 .err{color:var(--mal);min-height:1.4em;margin:0;font-size:14px}
 
-.app{height:100%;display:grid;grid-template-columns:230px minmax(0,1fr) 240px;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"top top top" "izq centro der";gap:16px;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 240px;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"top top" "centro der";gap:16px;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 .top{grid-area:top;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--borde);border-radius:14px;padding:12px 20px;background:rgba(7,21,36,.7);box-shadow:0 0 30px rgba(30,140,255,.12) inset}
 .estado{display:flex;align-items:center;gap:10px;color:var(--tenue);font:400 13px var(--titulo);letter-spacing:.14em;text-transform:uppercase}
 .punto{width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);transition:.3s}
@@ -26,11 +26,11 @@ button{cursor:pointer}
 .punto.escuchando{background:#c77dff;box-shadow:0 0 14px #c77dff;animation:lat .9s infinite}
 @keyframes lat{50%{transform:scale(1.5);opacity:.7}}
 
-.izq{grid-area:izq;display:flex;flex-direction:column;gap:10px}
-.nav{text-align:left;background:rgba(7,21,36,.8);border:1px solid var(--borde);border-radius:10px;padding:13px 14px;color:var(--txt);transition:.2s}
-.nav:hover{border-color:var(--cian)}
-.nav.on{border-color:var(--cian);box-shadow:0 0 18px rgba(79,214,255,.25) inset;color:#fff}
-.nav.suave{margin-top:auto;color:var(--tenue)}
+.acciones{display:flex;align-items:center;gap:14px}
+.ico{display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:999px;border:1px solid var(--borde);background:rgba(7,21,36,.8);color:var(--tenue);transition:.2s}
+.ico:hover{border-color:var(--cian);color:#fff}
+.ico.on{color:var(--cian2);border-color:var(--cian);box-shadow:0 0 14px rgba(79,214,255,.3) inset}
+.entrada .ico{width:42px;height:42px;flex:none}
 
 .centro{position:relative;isolation:isolate;grid-area:centro;min-width:0;display:flex;flex-direction:column;gap:12px;border:1px solid var(--borde);border-radius:14px;background:rgba(7,21,36,.55);padding:14px}
 .log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px;scroll-behavior:smooth}
@@ -55,25 +55,21 @@ button{cursor:pointer}
 .num.peq{font-size:18px}
 
 @media (max-width:900px){
- .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"top" "izq" "centro";gap:10px;padding:10px}
- .izq{flex-direction:row;overflow-x:auto;gap:8px}
- .nav{white-space:nowrap;padding:10px 12px;font-size:14px}.nav.suave{margin:0}
+ .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"top" "centro";gap:10px;padding:10px}
  .der{display:none}
  .marca{font-size:22px}
+ .estado span:last-child{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 .recs{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:14px}.recs li{border-left:2px solid var(--cian);padding-left:10px}.recs small{display:block;color:var(--tenue)}.tenue{color:var(--tenue);border:0!important;padding:0!important}
 
-/* Orbe de Nova: aparece al aplaudir o preguntar, y se apaga en reposo */
-.orbe{position:absolute;left:50%;top:44%;width:min(78%,460px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.82);opacity:0;pointer-events:none;z-index:-1;transition:opacity .6s ease,transform .8s ease;
-  -webkit-mask-image:radial-gradient(circle,#000 52%,transparent 71%);mask-image:radial-gradient(circle,#000 52%,transparent 71%);mix-blend-mode:screen}
-.orbe img{width:100%;height:100%;display:block;animation:respira 6s ease-in-out infinite}
-.orbe.on{opacity:.95;transform:translate(-50%,-50%) scale(1)}
-.orbe.pensando img{animation-duration:1.6s}
-.orbe.hablando{animation:latido 1.1s ease-in-out infinite}
-.orbe.escuchando img{filter:saturate(1.25) brightness(1.1)}
-@keyframes respira{50%{transform:scale(1.035)}}
+/* Orbe de Nova: holograma animado, aparece al preguntar o aplaudir */
+.orbe{position:absolute;left:50%;top:42%;width:min(92%,640px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.8);opacity:0;pointer-events:none;z-index:-1;transition:opacity .6s ease,transform .8s cubic-bezier(.2,.8,.2,1);
+  -webkit-mask-image:radial-gradient(circle,#000 54%,transparent 71%);mask-image:radial-gradient(circle,#000 54%,transparent 71%);mix-blend-mode:screen}
+.orbe .capa{position:absolute;inset:0;width:100%;height:100%;display:block;will-change:transform}
+.orbe .capa.b{opacity:.5;mix-blend-mode:screen}
+.orbe canvas{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:screen}
+.orbe.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .centro:has(.orbe.on) .vacio{opacity:0;transition:opacity .4s}
-@keyframes latido{50%{transform:translate(-50%,-50%) scale(1.045)}}
 .msg{position:relative}.msg.n{background:rgba(5,16,28,.86)}.msg.u{background:rgba(12,51,84,.92)}

@@ -12,6 +12,7 @@ import { agendaServer, memoryForPrompt, startReminders, listReminders, describeW
 import { startMailWatcher } from './mail.mjs'
 import { startNewsWatcher } from './noticias.mjs'
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
+import { spawn, execFile } from 'node:child_process'
 
 process.env.TZ = process.env.TZ ?? 'America/Santo_Domingo'
 const PORT = Number(process.env.PORT ?? 8080)
@@ -25,6 +26,35 @@ if (PASSWORD.length < 8) {
   console.error('[nova] Falta NOVA_PASSWORD (mínimo 8 caracteres). Sin contraseña cualquiera gastaría su plan de Claude.')
   process.exit(1)
 }
+
+
+// ---------- sesión de Claude (uso local) ----------
+const ROOT = fileURLToPath(new URL('.', import.meta.url))
+function claudeBin() {
+  const suf = process.platform === 'win32' ? '.exe' : ''
+  const cand = [`${process.platform}-${process.arch}`, `${process.platform}-${process.arch}-musl`]
+  for (const c of cand) { const p = join(ROOT, 'node_modules', '@anthropic-ai', `claude-agent-sdk-${c}`, `claude${suf}`); if (existsSync(p)) return p }
+  return null
+}
+function haySesion() {
+  return new Promise((ok) => {
+    if (process.env.CLAUDE_CODE_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY) return ok(true)
+    const bin = claudeBin(); if (!bin) return ok(true)
+    execFile(bin, ['auth', 'status'], { timeout: 20000 }, (err, out) => { try { ok(JSON.parse(out).loggedIn === true) } catch { ok(!err) } })
+  })
+}
+let loginProc = null
+function iniciarLogin() {
+  if (loginProc) return false
+  const bin = claudeBin(); if (!bin) return false
+  console.log('\n[nova] Falta iniciar sesión con su cuenta de Claude. Se abre el navegador: acepte y regrese aquí.\n')
+  loginProc = spawn(bin, ['auth', 'login'], { stdio: 'inherit' })
+  loginProc.on('exit', () => { loginProc = null; console.log('[nova] Inicio de sesión terminado. Ya puede hablar con Nova.') })
+  loginProc.on('error', () => { loginProc = null })
+  return true
+}
+const SIN_SESION = /not logged in|please run \/login|invalid api key|authentication/i
+haySesion().then((ok) => { if (!ok) iniciarLogin() })
 
 const SYSTEM = `Eres Nova, una asistente personal de voz. Hablas en español latino claro y tratas al usuario de "Señor", de usted (dilo como mucho una vez por respuesta, no en todas).
 PROFUNDIDAD: responde como una persona que sabe, no como un buscador. Saludos y confirmaciones: una o dos frases. Una pregunta real: respuesta hablada y detallada de 100 a 250 palabras, en párrafos naturales: primero la respuesta, luego las razones, un ejemplo y los matices.
@@ -129,7 +159,7 @@ async function chat(req, res) {
   const ac = new AbortController()
   res.on('close', () => ac.abort())
   active++
-  let any = false
+  let any = false, head = '', sinSesion = false
   try {
     const session = query({
       prompt: promptFrom(msgs),
@@ -154,14 +184,22 @@ async function chat(req, res) {
     for await (const m of session) {
       if (m.type === 'stream_event') {
         const ev = m.event
-        if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta' && ev.delta.text) { any = true; send({ t: 'text', text: ev.delta.text }) }
+        if (ev?.type === 'content_block_delta' && ev.delta?.type === 'text_delta' && ev.delta.text) {
+          if (!any) { head += ev.delta.text; if (head.length < 40 && !/[.!?]\s*$/.test(head)) continue; if (SIN_SESION.test(head)) { sinSesion = true; break } any = true; send({ t: 'text', text: head }) }
+          else send({ t: 'text', text: ev.delta.text })
+        }
         if (ev?.type === 'content_block_start' && ev.content_block?.type === 'tool_use') send({ t: 'tool' })
       } else if (m.type === 'result') {
         if (m.subtype === 'success') {
-          if (!any && m.result) send({ t: 'text', text: m.result })
+          if (!any && m.result) { if (SIN_SESION.test(m.result)) sinSesion = true; else send({ t: 'text', text: m.result }) }
+          if (sinSesion) break
           send({ t: 'done' })
         } else send({ t: 'error', message: 'No pude completar la respuesta. Intente de nuevo.' })
       }
+    }
+    if (sinSesion) {
+      const abierto = iniciarLogin()
+      send({ t: 'error', message: abierto || loginProc ? 'Nova necesita su sesión de Claude. Se abrió una ventana del navegador: acepte y vuelva a preguntarme.' : 'Nova no tiene sesión de Claude en este equipo.' })
     }
   } catch (e) {
     if (!ac.signal.aborted) {

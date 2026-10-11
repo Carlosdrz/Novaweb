@@ -26,18 +26,15 @@
 <div id="app" class="app" hidden>
   <header class="top">
     <div class="marca" aria-label="NOVA">NOVA</div>
-    <div class="estado"><span id="punto" class="punto"></span><span id="estadoTxt">En línea</span></div>
+    <div class="acciones">
+      <button id="nuevo" class="ico" title="Nueva conversación" aria-label="Nueva conversación"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div class="estado"><span id="punto" class="punto"></span><span id="estadoTxt">En línea</span></div>
+      <button id="salir" class="ico" title="Salir" aria-label="Salir"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></svg></button>
+    </div>
   </header>
 
-  <nav class="izq" aria-label="Controles">
-    <button id="nuevo" class="nav">Nueva conversación</button>
-    <button id="vozBtn" class="nav on" aria-pressed="true">Respuestas habladas</button>
-    <button id="escBtn" class="nav" aria-pressed="false">Escucha: diga «Nova»</button>
-    <button id="salir" class="nav suave">Salir</button>
-  </nav>
-
   <section class="centro">
-    <div id="orbe" class="orbe" aria-hidden="true"><img src="/orbe.webp" alt="" width="1024" height="1024"></div>
+    <div id="orbe" class="orbe" aria-hidden="true"><img class="capa b" src="/orbe.webp" alt=""><img class="capa a" src="/orbe.webp" alt=""><canvas id="fx"></canvas></div>
     <div id="log" class="log" aria-live="polite"></div>
     <p id="aviso" class="aviso" role="alert" hidden></p>
     <form id="form" class="entrada">
@@ -45,6 +42,8 @@
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
       </button>
       <input id="txt" autocomplete="off" placeholder="Escriba o hable…" aria-label="Mensaje">
+      <button type="button" id="escBtn" class="ico" aria-pressed="false" title="Escucha activa: diga «Nova» o aplauda" aria-label="Escucha activa"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h2M7 8v8M11 4v16M15 8v8M19 10v4M21 12h0"/></svg></button>
+      <button type="button" id="vozBtn" class="ico on" aria-pressed="true" title="Respuestas habladas" aria-label="Respuestas habladas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></button>
       <button type="submit" id="enviar" class="enviar" aria-label="Enviar">Enviar</button>
       <button type="button" id="parar" class="parar" aria-label="Detener" hidden>Detener</button>
     </form>
@@ -57,6 +56,7 @@
     <p id="cuenta" hidden>0</p>
   </aside>
 </div>
+<script src="/orbe.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
