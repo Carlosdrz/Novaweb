@@ -9,7 +9,7 @@
   const P = { velAnillo: 0.2, energia: 0.15, tono: 200, brillo: 1 }
   const META = {
     reposo:    { velAnillo: 0.15, energia: 0.12, tono: 200 },
-    escuchando:{ velAnillo: 0.5,  energia: 0.45, tono: 275 },
+    escuchando:{ velAnillo: 0.5,  energia: 0.45, tono: 203 },
     pensando:  { velAnillo: 2.4,  energia: 1,    tono: 190 },
     ejecutando:{ velAnillo: 1.6,  energia: 0.85, tono: 185 },
     hablando:  { velAnillo: 0.8,  energia: 0.7,  tono: 195 },

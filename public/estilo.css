@@ -39,7 +39,7 @@ select{color-scheme:dark}
 .punto.pensando{background:var(--ambar);box-shadow:0 0 12px var(--ambar);animation:lat 1s infinite}
 .punto.ejecutando{background:#7fe9ff;box-shadow:0 0 12px #7fe9ff;animation:lat .6s infinite}
 .punto.hablando{background:var(--luz);box-shadow:0 0 14px var(--luz);animation:lat .7s infinite}
-.punto.escuchando{background:#c77dff;box-shadow:0 0 14px #c77dff;animation:lat .9s infinite}
+.punto.escuchando{background:#7fe9ff;box-shadow:0 0 14px #7fe9ff;animation:lat .9s infinite}
 .punto.error{background:var(--mal);box-shadow:0 0 12px var(--mal)}
 @keyframes lat{50%{transform:scale(1.5);opacity:.7}}
 .micEstado{display:flex;align-items:center;gap:7px;font:400 11px var(--mono);letter-spacing:.06em;color:var(--tenue);border:1px solid var(--borde);border-radius:999px;padding:5px 10px;white-space:nowrap}
@@ -70,7 +70,7 @@ select{color-scheme:dark}
 .mic,.enviar,.parar,.btn{border:0;border-radius:999px;padding:10px 16px;background:var(--bosque);color:#fff}
 .btn{border-radius:8px;padding:9px 14px}.btn.sec{background:transparent;border:1px solid var(--borde);color:var(--txt)}
 .mic{width:42px;height:42px;padding:0;display:grid;place-items:center}
-.mic.on{background:#7a3fb0;box-shadow:0 0 18px #c77dff}
+.mic.on{background:#0f6aa8;box-shadow:0 0 18px #4fd6ff}
 .parar{background:#7a2b2b}
 .entrada .ico{width:42px;height:42px}
 
