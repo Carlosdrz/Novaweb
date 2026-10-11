@@ -8,7 +8,10 @@ if not exist server.mjs goto sinextraer
 where node >nul 2>nul
 if errorlevel 1 ( echo Falta instalar Node.js: https://nodejs.org ^(boton LTS^) & pause & exit /b 1 )
 if not exist node_modules ( echo Instalando piezas, espere un minuto... & call npm install || ( echo Fallo la instalacion. & pause & exit /b 1 ) )
-if "%NOVA_PASSWORD%"=="" set /p NOVA_PASSWORD=Elija una contrasena para entrar a Nova ^(minimo 8 caracteres^): 
+call npx -y @anthropic-ai/claude-code auth status >nul 2>nul
+if errorlevel 1 ( echo Falta iniciar sesion con su cuenta de Claude. Se abrira el navegador, acepte y vuelva aqui. & call npx -y @anthropic-ai/claude-code auth login )
+if "%NOVA_PASSWORD%"=="" if exist nova.clave set /p NOVA_PASSWORD=<nova.clave
+if "%NOVA_PASSWORD%"=="" ( set /p NOVA_PASSWORD=Elija una contrasena para entrar a Nova ^(minimo 8 caracteres^):  & >nova.clave echo %NOVA_PASSWORD%)
 echo.
 echo Abriendo Nova. No cierre esta ventana mientras la use.
 start "" cmd /c "timeout /t 6 >nul & start http://localhost:8080"
