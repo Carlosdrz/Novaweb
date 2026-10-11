@@ -3,18 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#030a14">
+<meta name="theme-color" content="#0d1210">
 <title>NOVA</title>
 <link rel="icon" href="/icono.svg" type="image/svg+xml">
 <link rel="manifest" href="/nova.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/estilo.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="marca" viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 5"/><path d="M14 35V13l20 22V13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/><circle cx="34" cy="13" r="2.6" fill="var(--luz)"/></symbol></svg>
+
 <main id="login" hidden>
   <form id="loginForm" class="login">
+    <svg class="logo" aria-hidden="true"><use href="#marca"/></svg>
     <div class="marca" aria-label="NOVA">NOVA</div>
     <label for="pw" class="sr">Contraseña</label>
     <input id="pw" type="password" autocomplete="current-password" placeholder="Contraseña" required>
@@ -25,38 +28,88 @@
 
 <div id="app" class="app" hidden>
   <header class="top">
-    <div class="marca" aria-label="NOVA">NOVA</div>
+    <div class="ident"><svg class="logo" aria-hidden="true"><use href="#marca"/></svg><div class="marca" aria-label="NOVA">NOVA</div></div>
+    <nav class="tabs" id="tabs" aria-label="Secciones">
+      <button data-v="inicio" class="tab on">Inicio</button>
+      <button data-v="conversaciones" class="tab">Conversaciones</button>
+      <button data-v="memoria" class="tab">Memoria</button>
+      <button data-v="herramientas" class="tab">Herramientas</button>
+      <button data-v="automatizaciones" class="tab">Automatizaciones</button>
+      <button data-v="configuracion" class="tab">Configuración</button>
+    </nav>
     <div class="acciones">
-      <button id="nuevo" class="ico" title="Nueva conversación" aria-label="Nueva conversación"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div id="micEstado" class="micEstado" role="status" title="Estado del micrófono"><span class="mp"></span><span id="micTxt">Micrófono apagado</span></div>
       <div class="estado"><span id="punto" class="punto"></span><span id="estadoTxt">En línea</span></div>
+      <button id="nuevo" class="ico" title="Nueva conversación" aria-label="Nueva conversación"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
       <button id="salir" class="ico" title="Salir" aria-label="Salir"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></svg></button>
     </div>
   </header>
 
-  <section class="centro">
+  <section id="v-inicio" class="vista centro on">
     <div id="orbe" class="orbe" aria-hidden="true"><img class="capa b" src="/orbe.webp" alt=""><img class="capa a" src="/orbe.webp" alt=""><canvas id="fx"></canvas></div>
     <div id="log" class="log" aria-live="polite"></div>
     <p id="aviso" class="aviso" role="alert" hidden></p>
     <form id="form" class="entrada">
-      <button type="button" id="mic" class="mic" aria-label="Hablar" title="Hablar">
+      <button type="button" id="mic" class="mic" aria-label="Hablar" title="Hablar ahora">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
       </button>
       <input id="txt" autocomplete="off" placeholder="Escriba o hable…" aria-label="Mensaje">
-      <button type="button" id="escBtn" class="ico" aria-pressed="false" title="Escucha activa: diga «Nova» o aplauda" aria-label="Escucha activa"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h2M7 8v8M11 4v16M15 8v8M19 10v4M21 12h0"/></svg></button>
+      <button type="button" id="escBtn" class="ico" aria-pressed="false" title="Escucha activa: palabra de activación y aplauso" aria-label="Escucha activa"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h2M7 8v8M11 4v16M15 8v8M19 10v4"/></svg></button>
       <button type="button" id="vozBtn" class="ico on" aria-pressed="true" title="Respuestas habladas" aria-label="Respuestas habladas"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></button>
       <button type="submit" id="enviar" class="enviar" aria-label="Enviar">Enviar</button>
       <button type="button" id="parar" class="parar" aria-label="Detener" hidden>Detener</button>
     </form>
   </section>
 
-  <aside class="der" aria-label="Estado">
+  <aside id="der" class="der" aria-label="Estado">
     <div class="caja"><h2>Tiempo de respuesta</h2><p id="lat" class="num">—</p></div>
     <div class="caja"><h2>Voz</h2><p id="vozInfo" class="num peq">Navegador</p></div>
     <div class="caja"><h2>Recordatorios</h2><ul id="recs" class="recs"><li class="tenue">Ninguno</li></ul></div>
     <p id="cuenta" hidden>0</p>
   </aside>
+
+  <section id="v-conversaciones" class="vista pagina" hidden><h1>Conversaciones</h1><p class="sub">Su historial se guarda en este equipo. Ábralo para continuar donde quedó.</p><div id="lConv" class="lista"></div></section>
+
+  <section id="v-memoria" class="vista pagina" hidden>
+    <h1>Memoria</h1><p class="sub">Lo que Nova recuerda de usted. Solo se guarda lo que usted dice o pide recordar; nunca contraseñas ni datos bancarios por su cuenta.</p>
+    <div class="fila"><label class="sw"><input type="checkbox" data-permiso="memoria"><span>Memoria activada</span></label></div>
+    <form id="fMem" class="fila"><input id="memTxt" placeholder="Añadir un recuerdo (usted autoriza guardarlo)" maxlength="300"><button class="btn">Guardar</button></form>
+    <div id="lMem" class="lista"></div>
+  </section>
+
+  <section id="v-herramientas" class="vista pagina" hidden>
+    <h1>Herramientas</h1><p class="sub">Usted decide qué puede usar Nova. Cada cambio se aplica al instante. Lo que modifica algo o sale al exterior siempre pide su confirmación.</p>
+    <div id="lPerm" class="tarjetas"></div>
+    <div class="dos">
+      <div class="caja"><h2>Notas</h2><form id="fNota" class="fila"><input id="notaTxt" placeholder="Nueva nota" maxlength="400"><button class="btn">+</button></form><ul id="lNotas" class="items"></ul></div>
+      <div class="caja"><h2>Tareas</h2><form id="fTarea" class="fila"><input id="tareaTxt" placeholder="Nueva tarea" maxlength="200"><button class="btn">+</button></form><ul id="lTareas" class="items"></ul></div>
+    </div>
+    <div class="caja"><h2>Historial de acciones</h2><ul id="lAct" class="hist"></ul></div>
+  </section>
+
+  <section id="v-automatizaciones" class="vista pagina" hidden>
+    <h1>Automatizaciones</h1><p class="sub">Recordatorios y rutinas que Nova dice en voz alta a su hora (con la página abierta). Las reglas del tipo «cuando ocurra X, haz Y» aún no existen: aquí solo hay lo que realmente funciona.</p>
+    <form id="fRec" class="fila wrap"><input id="recTxt" placeholder="¿Qué debo recordarle?" maxlength="200" required><input id="recAt" type="datetime-local" required aria-label="Fecha y hora"><select id="recRep" aria-label="Repetir"><option value="none">Una vez</option><option value="daily">Todos los días</option><option value="weekdays">Lunes a viernes</option></select><button class="btn">Programar</button></form>
+    <div id="lRec" class="lista"></div>
+  </section>
+
+  <section id="v-configuracion" class="vista pagina" hidden>
+    <h1>Configuración</h1>
+    <div class="tarjetas">
+      <div class="caja"><h2>Activación</h2><label class="campo">Palabra de activación<input id="cfgNombre" maxlength="16"></label><label class="campo">Idioma<select id="cfgIdioma"><option value="es">Español</option><option value="en">English</option></select></label><label class="sw"><input type="checkbox" id="cfgVoz"><span>Respuestas habladas</span></label></div>
+      <div class="caja"><h2>Carpetas autorizadas</h2><p class="sub peq">Solo si activa «Buscar» o «Leer archivos». Nova no sale de estas carpetas.</p><ul id="lCarp" class="items"></ul><div id="sugCarp" class="fila wrap"></div><form id="fCarp" class="fila"><input id="carpTxt" placeholder="Ruta de la carpeta"><button class="btn">Añadir</button></form></div>
+      <div class="caja"><h2>Aplicaciones autorizadas</h2><p class="sub peq">Nova solo abre las que marque.</p><div id="lApps" class="checks"></div></div>
+      <div class="caja"><h2>Conexiones</h2><ul id="lCon" class="items"></ul></div>
+    </div>
+    <p class="sub peq">Las claves (Claude, ElevenLabs, Gmail, Home Assistant) viven solo en el servidor; esta página nunca las ve.</p>
+  </section>
+</div>
+
+<div id="modal" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="mTit" aria-describedby="mDet">
+  <div class="mcaja"><h2 id="mTit">Confirmar</h2><p id="mDet"></p><div class="fila fin"><button id="mNo" class="btn sec">Denegar</button><button id="mSi" class="btn">Permitir</button></div></div>
 </div>
 <script src="/orbe.js"></script>
 <script src="/app.js"></script>
+<script src="/vistas.js"></script>
 </body>
 </html>

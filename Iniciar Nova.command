@@ -6,7 +6,7 @@ npx -y @anthropic-ai/claude-code auth status >/dev/null 2>&1 || npx -y @anthropi
 [ -n "$NOVA_PASSWORD" ] || { [ -f nova.clave ] && NOVA_PASSWORD=$(cat nova.clave); }
 [ -n "$NOVA_PASSWORD" ] || read -p "Elija una contrasena para entrar a Nova (minimo 8 caracteres): " NOVA_PASSWORD
 echo "$NOVA_PASSWORD" > nova.clave
-export NOVA_PASSWORD
+export NOVA_PASSWORD NOVA_LOCAL=1
 echo "Abriendo Nova. No cierre esta ventana mientras la use."
 (sleep 4; open http://localhost:8080) &
 node server.mjs

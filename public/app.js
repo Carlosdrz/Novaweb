@@ -1,6 +1,8 @@
 'use strict'
 const $ = (id) => document.getElementById(id)
-const state = { msgs: [], busy: false, ctl: null, voz: true, serverVoz: false, escucha: false, wakeUntil: 0 }
+const state = { msgs: [], busy: false, ctl: null, voz: true, serverVoz: false, escucha: false, wakeUntil: 0, convId: null, aj: null, nombre: 'Nova', lang: 'es-DO' }
+const nuevoId = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => (b % 36).toString(36)).join('')
+const api = async (url, o = {}) => { const r = await fetch(url, { ...o, headers: { 'content-type': 'application/json', ...(o.headers ?? {}) } }); if (r.status === 401) { location.reload(); throw new Error('sesión') } const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Error'); return j }
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition
 
 // ---------- acceso ----------
@@ -10,6 +12,7 @@ async function arrancar() {
   if (!p) { $('login').hidden = false; $('app').hidden = true; return }
   $('login').hidden = true; $('app').hidden = false
   state.serverVoz = p.voz
+  await cargarAjustes()
   $('vozInfo').textContent = p.voz ? 'ElevenLabs' : 'Navegador'
   if (!SR) { $('mic').hidden = true; $('escBtn').hidden = true }
   vacio()
@@ -31,10 +34,11 @@ async function cargarRecs() {
 async function avisar() {
   try {
     const r = await fetch('/api/avisos'); if (!r.ok) return
+    if ($('punto').className.includes('error') && !state.busy) estado('', 'En línea')
     const { avisos } = await r.json()
     for (const a of avisos) { burbuja('nova', a.text); decirYa(a.text) }
     if (avisos.length) cargarRecs()
-  } catch {}
+  } catch { if (!state.busy) estado('error', 'Sin conexión') }
 }
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault(); $('loginErr').textContent = ''
@@ -49,13 +53,24 @@ let orbeT = null
 function orbe(s) {
   const o = $('orbe'); if (!o) return
   clearTimeout(orbeT)
-  if (s === 'escuchando' || s === 'pensando' || s === 'hablando') { o.className = 'orbe on ' + s }
+  if (['escuchando', 'pensando', 'hablando', 'ejecutando'].includes(s)) { o.className = 'orbe on ' + s }
+  else if (s === 'error') { o.className = 'orbe on error'; orbeT = setTimeout(() => { o.className = 'orbe' }, 3500) }
   else { orbeT = setTimeout(() => { o.className = 'orbe' }, 2500) }
 }
 function estado(s, txt) {
   orbe(s)
   $('punto').className = 'punto ' + s
   $('estadoTxt').textContent = txt
+}
+async function cargarAjustes() {
+  try { const e = await api('/api/estado'); aplicarAjustes(e.ajustes); window.Nova.estadoServidor = e } catch {}
+}
+function aplicarAjustes(aj) {
+  state.aj = aj; state.nombre = aj.nombre || 'Nova'; state.lang = aj.idioma === 'en' ? 'en-US' : 'es-DO'
+  state.voz = aj.voz !== false; $('vozBtn').classList.toggle('on', state.voz); $('vozBtn').setAttribute('aria-pressed', state.voz)
+  NOMBRE = new RegExp('^\\s*(?:oye|hola|hey|ok|okay|hi|hello)?[\\s,]*' + state.nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b[\\s,.:!?-]*', 'i')
+  $('estadoTxt').textContent = $('estadoTxt').textContent || 'En línea'
+  if (rec && modo === 'cont') { pararEscucha(true); if (state.escucha) iniciarEscucha() }
 }
 function aviso(t) { $('aviso').hidden = !t; $('aviso').textContent = t || '' }
 function vacio() {
@@ -67,12 +82,13 @@ function vacio() {
 }
 function burbuja(rol, texto) {
   const l = $('log'); l.querySelector('.vacio')?.remove()
-  const d = document.createElement('div'); d.className = 'msg ' + (rol === 'user' ? 'u' : 'n'); d.textContent = texto
+  const d = document.createElement('div'); d.className = 'msg ' + (rol === 'user' ? 'u' : 'n'); const tx = document.createElement('span'); tx.className = 'tx'; tx.textContent = texto; d.append(tx)
+  if (rol !== 'user') { const b = document.createElement('button'); b.className = 'rep'; b.type = 'button'; b.textContent = '↻ repetir'; b.setAttribute('aria-label', 'Repetir esta respuesta en voz alta'); b.onclick = () => { if (tx.textContent) { callar(); decirYa(tx.textContent) } }; d.append(b) }
   l.append(d); l.scrollTop = l.scrollHeight
-  return d
+  return tx
 }
-$('nuevo').onclick = () => { detener(); vacio(); aviso('') }
-$('vozBtn').onclick = () => { state.voz = !state.voz; $('vozBtn').classList.toggle('on', state.voz); $('vozBtn').setAttribute('aria-pressed', state.voz); if (!state.voz) callar() }
+$('nuevo').onclick = () => { detener(); vacio(); aviso(''); state.convId = null; window.Nova.ir('inicio') }
+$('vozBtn').onclick = () => { state.voz = !state.voz; api('/api/ajustes', { method: 'PUT', body: JSON.stringify({ voz: state.voz }) }).catch(() => {}); $('vozBtn').classList.toggle('on', state.voz); $('vozBtn').setAttribute('aria-pressed', state.voz); if (!state.voz) callar() }
 
 // ---------- voz de salida ----------
 const player = new Audio()
@@ -84,13 +100,13 @@ function desbloquear() {
   try { speechSynthesis.getVoices() } catch {}
 }
 function vozEs() {
-  const vs = speechSynthesis.getVoices().filter((v) => /^es/i.test(v.lang))
-  return vs.find((v) => /es-(DO|MX|US|419)/i.test(v.lang)) || vs[0] || null
+  const en = state.lang.startsWith('en'), vs = speechSynthesis.getVoices().filter((v) => (en ? /^en/i : /^es/i).test(v.lang))
+  return vs.find((v) => (en ? /en-US/i : /es-(DO|MX|US|419)/i).test(v.lang)) || vs[0] || null
 }
 function sintetizar(texto, g) {
   return new Promise((ok) => {
     try {
-      const u = new SpeechSynthesisUtterance(texto); u.lang = 'es-DO'; const v = vozEs(); if (v) u.voice = v
+      const u = new SpeechSynthesisUtterance(texto); u.lang = state.lang; const v = vozEs(); if (v) u.voice = v
       u.onend = u.onerror = () => ok(); speechSynthesis.speak(u)
     } catch { ok() }
   })
@@ -155,6 +171,9 @@ async function enviar(texto) {
         if (ev.t === 'text') {
           if (!primero) { primero = true; $('lat').textContent = ((performance.now() - t0) / 1000).toFixed(1) + ' s'; estado('hablando', 'Respondiendo') }
           acc += ev.text; buf += ev.text; b.textContent = acc; $('log').scrollTop = $('log').scrollHeight; soltar(false)
+        } else if (ev.t === 'tool') {
+          const d = document.createElement('div'); d.className = 'tool'; d.textContent = '⚙ ' + (ev.detalle || ev.name); b.parentElement.before(d); estado('ejecutando', ev.name || 'Ejecutando')
+        } else if (ev.t === 'confirm') { pedirConfirmacion(ev)
         } else if (ev.t === 'error') throw new Error(ev.message)
       }
     }
@@ -162,28 +181,44 @@ async function enviar(texto) {
     if (acc.trim()) { state.msgs.push({ role: 'assistant', content: acc.trim() }); $('cuenta').textContent = state.msgs.length }
     else { b.textContent = 'No obtuve respuesta. Intente de nuevo.' }
   } catch (e) {
-    if (e.name !== 'AbortError') { aviso(e.message || 'Fallo al responder.'); if (!acc) b.remove() }
+    if (e.name !== 'AbortError') { aviso(e.message || 'Fallo al responder.'); if (!acc) b.parentElement.remove(); estado('error', 'Error') }
     else if (acc.trim()) state.msgs.push({ role: 'assistant', content: acc.trim() })
   } finally {
-    cargarRecs(); b.classList.remove('act'); state.busy = false; state.ctl = null
+    cargarRecs(); b.classList.remove('act'); state.busy = false; state.ctl = null; cerrarModal(); guardarConv()
     $('enviar').hidden = false; $('parar').hidden = true
-    if (!hablando) fin()
+    if (!hablando && $('punto').className.indexOf('error') < 0) fin()
   }
 }
-function detener() { state.ctl?.abort(); callar(); estado('', 'En línea') }
+function guardarConv() {
+  if (!state.msgs.length) return
+  if (!state.convId) state.convId = nuevoId()
+  api('/api/conversaciones/' + state.convId, { method: 'PUT', body: JSON.stringify({ msgs: state.msgs }) }).catch(() => {})
+}
+// ---------- confirmaciones ----------
+let confId = null
+function pedirConfirmacion(ev) {
+  confId = ev.id; $('mTit').textContent = ev.titulo; $('mDet').textContent = ev.detalle; $('modal').hidden = false; $('mSi').focus()
+  decirYa('Señor, necesito su confirmación: ' + ev.titulo + '.')
+}
+function cerrarModal() { $('modal').hidden = true; confId = null }
+function responder(ok) { const id = confId; cerrarModal(); if (id) api('/api/confirmar', { method: 'POST', body: JSON.stringify({ id, ok }) }).catch(() => {}) }
+$('mSi').onclick = () => responder(true); $('mNo').onclick = () => responder(false)
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (confId) responder(false); else if (state.busy || hablando) detener() } })
+function detener() { state.ctl?.abort(); callar(); cerrarModal(); estado('', 'En línea') }
 $('parar').onclick = detener
 $('form').addEventListener('submit', (e) => { e.preventDefault(); desbloquear(); const t = $('txt').value; $('txt').value = ''; enviar(t) })
 
 // ---------- micrófono ----------
 let rec = null, modo = null // 'uno' | 'cont'
 function crearRec(continuo) {
-  const r = new SR(); r.lang = 'es-DO'; r.continuous = continuo; r.interimResults = true
+  const r = new SR(); r.lang = state.lang; r.continuous = continuo; r.interimResults = true
   return r
 }
 function pararEscucha(silencioso) {
   if (rec) { const r = rec; rec = null; r.onend = null; try { r.abort() } catch {} }
   $('mic').classList.remove('on')
   if (!silencioso && !state.busy && !hablando) estado('', 'En línea')
+  micUI()
 }
 function escuchaUna() {
   if (!SR) return
@@ -191,13 +226,13 @@ function escuchaUna() {
   const r = crearRec(false); rec = r; let final = ''
   r.onresult = (e) => { let t = ''; for (const x of e.results) t += x[0].transcript; $('txt').value = t; if (e.results[e.results.length - 1].isFinal) final = t }
   r.onerror = (e) => { if (e.error === 'not-allowed') aviso('Permita el micrófono en el navegador para hablar con Nova.'); else if (e.error !== 'no-speech' && e.error !== 'aborted') aviso('No pude escuchar. Intente de nuevo.') }
-  r.onend = () => { rec = null; $('mic').classList.remove('on'); const t = (final || $('txt').value).trim(); $('txt').value = ''; if (t) enviar(t); else if (!state.busy) estado('', 'En línea') }
-  try { r.start(); $('mic').classList.add('on'); estado('escuchando', 'Escuchando') } catch { aviso('El micrófono no está disponible.') }
+  r.onend = () => { rec = null; micUI(); $('mic').classList.remove('on'); const t = (final || $('txt').value).trim(); $('txt').value = ''; if (t) enviar(t); else if (!state.busy) estado('', 'En línea') }
+  try { r.start(); $('mic').classList.add('on'); estado('escuchando', 'Escuchando'); micUI() } catch { aviso('El micrófono no está disponible.') }
 }
 $('mic').addEventListener('click', iniciarClap)
 $('mic').onclick = () => { if (rec && modo === 'uno') { try { rec.stop() } catch {} } else escuchaUna() }
 
-const NOMBRE = /^\s*(?:oye|hola|hey|ok|okay)?[\s,]*nova\b[\s,.:!?-]*/i
+let NOMBRE = /^\s*(?:oye|hola|hey|ok|okay)?[\s,]*nova\b[\s,.:!?-]*/i
 function iniciarEscucha() {
   if (!SR || rec || hablando) return
   modo = 'cont'
@@ -214,8 +249,8 @@ function iniciarEscucha() {
     }
   }
   r.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { state.escucha = false; $('escBtn').classList.remove('on'); aviso('Permita el micrófono en el navegador para que Nova escuche su nombre.') } }
-  r.onend = () => { rec = null; if (state.escucha && !hablando && !state.busy) setTimeout(iniciarEscucha, 300) }
-  try { r.start(); if (!state.busy) estado('espera', 'Esperando «Nova»') } catch {}
+  r.onend = () => { rec = null; micUI(); if (state.escucha && !hablando && !state.busy) setTimeout(iniciarEscucha, 300) }
+  try { r.start(); if (!state.busy) estado('espera', 'Esperando «' + state.nombre + '»'); micUI() } catch {}
 }
 function decirYa(t) { const v = state.voz; state.voz = true; decir(t); state.voz = v }
 function activarEscucha(on) {
@@ -223,22 +258,31 @@ function activarEscucha(on) {
   state.escucha = on
   $('escBtn').classList.toggle('on', on); $('escBtn').setAttribute('aria-pressed', on)
   try { localStorage.setItem('nova-escucha', on ? '1' : '0') } catch {}
-  if (on) iniciarEscucha(); else pararEscucha(false)
+  if (on) iniciarEscucha(); else { pararEscucha(false); detenerClap() }
+  micUI()
 }
 $('escBtn').onclick = () => { desbloquear(); activarEscucha(!state.escucha) }
 
 // ---------- aplauso ----------
-let clapIniciado = false
+let clapIniciado = false, clapStream = null, clapTimer = null
+function micUI() {
+  const on = Boolean(clapStream) || Boolean(rec)
+  $('micEstado').classList.toggle('on', on)
+  $('micTxt').textContent = rec && modo === 'uno' ? 'Mic activo · lo escucho' : on ? `Mic activo · «${state.nombre}»` : 'Mic apagado'
+}
+function detenerClap() { clearInterval(clapTimer); clapTimer = null; clapStream?.getTracks().forEach((t) => t.stop()); clapStream = null; try { window.__ac?.close() } catch {} clapIniciado = false; micUI() }
 async function iniciarClap() {
   if (clapIniciado || !navigator.mediaDevices?.getUserMedia) return
   clapIniciado = true
   try {
     const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } })
-    const ac = new (window.AudioContext || window.webkitAudioContext)(); const an = ac.createAnalyser(); an.fftSize = 1024
+    clapStream = s
+    const ac = new (window.AudioContext || window.webkitAudioContext)(); window.__ac = ac; const an = ac.createAnalyser(); an.fftSize = 1024
     ac.createMediaStreamSource(s).connect(an)
     const buf = new Float32Array(an.fftSize); let floor = 0.01, prev = 0, ultimo = 0
     window.__clap = { rms: 0, floor: 0 }
-    setInterval(() => {
+    micUI()
+    clapTimer = setInterval(() => {
       if (ac.state === 'suspended') ac.resume().catch(() => {})
       an.getFloatTimeDomainData(buf)
       let sum = 0, pk = 0; for (const v of buf) { sum += v * v; const a = Math.abs(v); if (a > pk) pk = a }
@@ -254,4 +298,5 @@ function despertar() {
   if (SR) escuchaUna(); else { estado('escuchando', 'Dígame'); $('txt').focus() }
 }
 
+window.Nova = { state, api, aviso, ir: () => {}, cargarConv: null, cargarAjustes, aplicarAjustes, cargarRecs, activarEscucha: (v) => activarEscucha(v), micUI }
 arrancar()

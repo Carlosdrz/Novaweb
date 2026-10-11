@@ -54,6 +54,7 @@ Start-Job -ScriptBlock {
   }
 } | Out-Null
 
+$env:NOVA_LOCAL = '1'
 Write-Host "`nNova arrancando. No cierre esta ventana mientras la use.`n" -ForegroundColor Green
 node server.mjs
 Fin "Nova se detuvo. Revise el mensaje de arriba."

@@ -6,12 +6,14 @@
   const cv = document.getElementById('fx'), cx = cv.getContext('2d')
   const imgA = orbe.querySelector('.capa.a'), imgB = orbe.querySelector('.capa.b')
   let estado = 'reposo', activo = false, raf = 0, t0 = performance.now(), W = 0, H = 0
-  const P = { velAnillo: 0.2, energia: 0.15, tono: 200, brillo: 1 }
+  const P = { velAnillo: 0.2, energia: 0.15, tono: 150, brillo: 1 }
   const META = {
-    reposo:    { velAnillo: 0.15, energia: 0.12, tono: 200 },
-    escuchando:{ velAnillo: 0.5,  energia: 0.45, tono: 275 },
-    pensando:  { velAnillo: 2.4,  energia: 1,    tono: 190 },
-    hablando:  { velAnillo: 0.8,  energia: 0.7,  tono: 195 },
+    reposo:    { velAnillo: 0.15, energia: 0.12, tono: 150 },
+    escuchando:{ velAnillo: 0.5,  energia: 0.45, tono: 170 },
+    pensando:  { velAnillo: 2.4,  energia: 1,    tono: 135 },
+    ejecutando:{ velAnillo: 1.6,  energia: 0.85, tono: 175 },
+    hablando:  { velAnillo: 0.8,  energia: 0.7,  tono: 150 },
+    error:     { velAnillo: 0.08, energia: 0.3,  tono: 2 },
   }
   // nivel de audio de la voz (ElevenLabs): analizador opcional
   let an = null, datos = null
@@ -55,8 +57,8 @@
     giro += dt * P.velAnillo * 0.25; giro2 -= dt * (0.04 + P.velAnillo * 0.18); fase += dt * (1 + E * 3)
     imgA.style.transform = `rotate(${giro * 57.3 * 0.35}deg) scale(${1 + 0.02 * Math.sin(t * 1.3) + lv * 0.05 + (estado === 'pensando' ? 0.02 * Math.sin(t * 7) : 0)})`
     imgB.style.transform = `rotate(${giro2 * 57.3}deg) scale(1.1)`
-    imgA.style.filter = `hue-rotate(${P.tono - 200}deg) brightness(${1 + E * 0.18 + lv * 0.25}) saturate(${1 + E * 0.25})`
-    imgB.style.filter = `hue-rotate(${P.tono - 200}deg)`
+    imgA.style.filter = `hue-rotate(${P.tono - 210}deg) brightness(${1 + E * 0.18 + lv * 0.25}) saturate(${1 + E * 0.25})`
+    imgB.style.filter = `hue-rotate(${P.tono - 210}deg)`
     resize(); const R = W / 2, c = R
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, W, H)
     cx.globalCompositeOperation = 'lighter'
