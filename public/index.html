@@ -30,15 +30,8 @@
 
 <div id="app" class="app" hidden>
   <header class="top">
+    <button id="navAbrir" class="ico navAbrir" aria-label="Abrir menú" title="Menú"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <div class="ident"><svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><use class="anillo" href="#m-anillo"/><use href="#m-n"/></svg><div class="marca" aria-label="NOVA">NOVA</div></div>
-    <nav class="tabs" id="tabs" aria-label="Secciones">
-      <button data-v="inicio" class="tab on">Inicio</button>
-      <button data-v="conversaciones" class="tab">Conversaciones</button>
-      <button data-v="memoria" class="tab">Memoria</button>
-      <button data-v="herramientas" class="tab">Herramientas</button>
-      <button data-v="automatizaciones" class="tab">Automatizaciones</button>
-      <button data-v="configuracion" class="tab">Configuración</button>
-    </nav>
     <div class="acciones">
       <div id="micEstado" class="micEstado" role="status" title="Estado del micrófono"><span class="mp"></span><span id="micTxt">Micrófono apagado</span></div>
       <div class="estado"><span id="punto" class="punto"></span><span id="estadoTxt">En línea</span></div>
@@ -47,12 +40,32 @@
     </div>
   </header>
 
+<aside id="nav" class="nav" aria-label="Navegación principal">
+    <div class="navScroll">
+      <div class="grupo"><span class="gt">Principal</span>
+        <button data-v="inicio" class="ni on" title="Inicio"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg><span>Inicio</span></button>
+        <button id="navNuevo" class="ni" title="Nueva conversación"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Nueva conversación</span></button>
+        <div id="recientes" class="recientes" aria-label="Conversaciones recientes"></div>
+      </div>
+      <div class="grupo"><span class="gt">Organización</span>
+        <button data-v="proyectos" class="ni" title="Proyectos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Proyectos</span></button><button data-v="busquedas" class="ni" title="Historial de búsquedas"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg><span>Historial de búsquedas</span></button><button data-v="memoria" class="ni" title="Memoria"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 3 4 3 3 0 0 0 5 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-3 4 3 3 0 0 1-5 1V5a2 2 0 0 1 3-1z"/></svg><span>Memoria</span></button>
+      </div>
+      <div class="grupo"><span class="gt">Automatización</span>
+        <button data-v="programadas" class="ni" title="Tareas programadas"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 3h6"/></svg><span>Tareas programadas</span></button>
+      </div>
+      <div class="grupo"><span class="gt">Sistema</span>
+        <button data-v="herramientas" class="ni" title="Herramientas y permisos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 6a4 4 0 0 0 5 5l-9 9a2 2 0 0 1-3-3l9-9a4 4 0 0 0-2-2z"/></svg><span>Herramientas y permisos</span></button><button data-v="configuracion" class="ni" title="Configuración"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Configuración</span></button>
+      </div>
+    </div>
+    <button id="navToggle" class="ni navToggle" title="Contraer o expandir el menú" aria-expanded="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span>Contraer</span></button>
+  </aside>
   <section id="v-inicio" class="vista centro on">
     <div id="escenario" class="escenario">
       <div id="orbe" class="orbe" aria-hidden="true"><canvas id="fx"></canvas></div>
     </div>
     <div id="log" class="log" aria-live="polite"></div>
     <p id="aviso" class="aviso" role="alert" hidden></p>
+    <div id="chipProy" class="chipProy" hidden><span id="chipProyTxt"></span><button type="button" id="chipProyX" aria-label="Salir del proyecto" title="Salir del proyecto">×</button></div>
     <form id="form" class="entrada">
       <button type="button" id="mic" class="mic" aria-label="Hablar" title="Hablar ahora">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
@@ -66,10 +79,9 @@
   </section>
 
   <aside id="der" class="der" aria-label="Estado">
-    <div class="caja"><h2>Tiempo de respuesta</h2><p id="lat" class="num">—</p></div>
-    <div class="caja"><h2>Voz</h2><p id="vozInfo" class="num peq">Navegador</p></div>
-    <div class="caja"><h2>Recordatorios</h2><ul id="recs" class="recs"><li class="tenue">Ninguno</li></ul></div>
-    <p id="cuenta" hidden>0</p>
+    <div class="caja"><h2>Tiempos</h2><div class="dosNum"><div><p id="lat" class="num">—</p><small>1.ª palabra</small></div><div><p id="latAudio" class="num">—</p><small>1.er audio</small></div></div></div>
+    <div class="caja"><h2>Próximamente</h2><ul id="recs" class="recs"><li class="tenue">Nada programado</li></ul></div>
+    <p id="cuenta" hidden>0</p><span id="vozInfo" hidden></span>
   </aside>
 
   <section id="v-conversaciones" class="vista pagina" hidden><h1>Conversaciones</h1><p class="sub">Su historial se guarda en este equipo. Ábralo para continuar donde quedó.</p><div id="lConv" class="lista"></div></section>
@@ -91,11 +103,9 @@
     <div class="caja"><h2>Historial de acciones</h2><ul id="lAct" class="hist"></ul></div>
   </section>
 
-  <section id="v-automatizaciones" class="vista pagina" hidden>
-    <h1>Automatizaciones</h1><p class="sub">Recordatorios y rutinas que Nova dice en voz alta a su hora (con la página abierta). Las reglas del tipo «cuando ocurra X, haz Y» aún no existen: aquí solo hay lo que realmente funciona.</p>
-    <form id="fRec" class="fila wrap"><input id="recTxt" placeholder="¿Qué debo recordarle?" maxlength="200" required><input id="recAt" type="datetime-local" required aria-label="Fecha y hora"><select id="recRep" aria-label="Repetir"><option value="none">Una vez</option><option value="daily">Todos los días</option><option value="weekdays">Lunes a viernes</option></select><button class="btn">Programar</button></form>
-    <div id="lRec" class="lista"></div>
-  </section>
+  <section id="v-proyectos" class="vista pagina" hidden></section>
+  <section id="v-busquedas" class="vista pagina" hidden></section>
+  <section id="v-programadas" class="vista pagina" hidden></section>
 
   <section id="v-configuracion" class="vista pagina" hidden>
     <h1>Configuración</h1>
@@ -105,7 +115,8 @@
       <div class="caja"><h2>Aplicaciones autorizadas</h2><p class="sub peq">Nova solo abre las que marque.</p><div id="lApps" class="checks"></div></div>
       <div class="caja"><h2>Conexiones</h2><ul id="lCon" class="items"></ul></div>
       <div class="caja"><h2>Claves de IA y voz</h2><p class="sub peq">Péguelas aquí una vez; se guardan solo en este servidor y nunca se muestran de nuevo. Gemini (Google) y OpenAI (ChatGPT) responden al instante y respaldan a Claude.</p>
-        <form id="fClaves" class="fila" autocomplete="off"><input id="kGemini" type="password" placeholder="Clave de Gemini (Google AI Studio)"><input id="kOpenai" type="password" placeholder="Clave de OpenAI (ChatGPT)"><input id="kEleven" type="password" placeholder="Clave de ElevenLabs"><input id="kVoz" type="text" placeholder="ID de voz de ElevenLabs (estilo Jarvis)"><button class="btn">Guardar claves</button></form></div>
+        <form id="fClaves" class="fila" autocomplete="off"><input id="kGemini" type="password" placeholder="Clave de Gemini (Google AI Studio)"><input id="kOpenai" type="password" placeholder="Clave de OpenAI (ChatGPT)"><input id="kEleven" type="password" placeholder="Clave de ElevenLabs"><input id="kVoz" type="text" placeholder="ID de voz de ElevenLabs (estilo Jarvis)"><input id="kYt" type="password" placeholder="Clave de YouTube Data API (videos)"><button class="btn">Guardar claves</button></form></div>
+      <div class="caja"><h2>Voz de Nova</h2><p class="sub peq">Ajuste fino de la voz de ElevenLabs. Vacío = valores recomendados.</p><form id="fVoz" class="campos"><label class="campo">Estabilidad (0–1)<input id="vEstab" inputmode="decimal" placeholder="0.5"></label><label class="campo">Similitud (0–1)<input id="vSim" inputmode="decimal" placeholder="0.8"></label><label class="campo">Estilo (0–1)<input id="vEstilo" inputmode="decimal" placeholder="0.12"></label><label class="campo">Velocidad (0.7–1.2)<input id="vVel" inputmode="decimal" placeholder="1.0"></label><button class="btn">Guardar voz</button></form></div>
     </div>
     <p class="sub peq">Las claves (Claude, ElevenLabs, Gmail, Home Assistant) viven solo en el servidor; esta página nunca las ve.</p>
   </section>
@@ -114,9 +125,12 @@
 <div id="modal" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="mTit" aria-describedby="mDet">
   <div class="mcaja"><h2 id="mTit">Confirmar</h2><p id="mDet"></p><div class="fila fin"><button id="mNo" class="btn sec">Denegar</button><button id="mSi" class="btn">Permitir</button></div></div>
 </div>
+<div id="visor" class="visor" hidden role="dialog" aria-modal="true" aria-label="Vista ampliada"><button id="visorX" class="ico" aria-label="Cerrar">×</button><div id="visorCont" class="visorCont"></div><p id="visorPie" class="visorPie"></p></div>
 <script src="/holo.js"></script>
 <script src="/orbe.js"></script>
 <script src="/app.js"></script>
+<script src="/medios.js"></script>
 <script src="/vistas.js"></script>
+<script src="/vistas2.js"></script>
 </body>
 </html>

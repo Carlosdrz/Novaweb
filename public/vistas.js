@@ -5,17 +5,17 @@
   const N = window.Nova, $ = (id) => document.getElementById(id), api = N.api
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e }
   const fecha = (t) => new Date(t).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })
-  const VISTAS = ['inicio', 'conversaciones', 'memoria', 'herramientas', 'automatizaciones', 'configuracion']
+  const VISTAS = ['inicio', 'conversaciones', 'memoria', 'herramientas', 'proyectos', 'busquedas', 'programadas', 'configuracion']
   const alFallar = (e) => N.aviso(e.message)
 
   function ir(v) {
     for (const x of VISTAS) { const s = $(x === 'inicio' ? 'v-inicio' : 'v-' + x); s.hidden = x !== v; s.classList.toggle('on', x === v && x === 'inicio') }
     $('der').hidden = v !== 'inicio'
-    document.querySelectorAll('#tabs .tab').forEach((b) => b.classList.toggle('on', b.dataset.v === v))
-    ;({ conversaciones: pintarConv, memoria: pintarMem, herramientas: pintarHerr, automatizaciones: pintarAuto, configuracion: pintarConf })[v]?.()
+    document.querySelectorAll('.ni[data-v]').forEach((b) => b.classList.toggle('on', b.dataset.v === v))
+    document.getElementById('app').classList.remove('navAbierto')
+    ;({ conversaciones: pintarConv, memoria: pintarMem, herramientas: pintarHerr, configuracion: pintarConf, ...(N.vistas || {}) })[v]?.()
   }
   N.ir = ir
-  $('tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (b) ir(b.dataset.v) })
 
   // ---- conversaciones
   async function pintarConv() {
@@ -34,10 +34,12 @@
   }
   function abrirConv(d) {
     $('nuevo').click(); N.state.convId = d.id
+    if (d.proyecto) api('/api/proyectos/' + d.proyecto).then((p) => N.fijarProyecto(p.id, p.nombre)).catch(() => N.fijarProyecto(null)); else N.fijarProyecto(null)
     const log = $('log'); log.replaceChildren(); N.state.msgs = d.msgs.slice()
     for (const m of d.msgs) { const b = el('div', 'msg ' + (m.role === 'user' ? 'u' : 'n')); const tx = el('span', 'tx', m.content); b.append(tx); log.append(b) }
     log.scrollTop = log.scrollHeight
   }
+  N.abrirConv = abrirConv
 
   // ---- memoria
   async function pintarMem() {
@@ -116,24 +118,6 @@
   $('fNota').addEventListener('submit', async (e) => { e.preventDefault(); const v = $('notaTxt').value; if (!v.trim()) return; try { await api('/api/notas', { method: 'POST', body: JSON.stringify({ texto: v }) }); $('notaTxt').value = ''; pintarNotas() } catch (x) { alFallar(x) } })
   $('fTarea').addEventListener('submit', async (e) => { e.preventDefault(); const v = $('tareaTxt').value; if (!v.trim()) return; try { await api('/api/tareas', { method: 'POST', body: JSON.stringify({ texto: v }) }); $('tareaTxt').value = ''; pintarTareas() } catch (x) { alFallar(x) } })
 
-  // ---- automatizaciones
-  async function pintarAuto() {
-    const l = $('lRec'); l.replaceChildren()
-    try {
-      const { items } = await api('/api/recordatorios')
-      if (!items.length) l.append(el('p', 'sub', 'No hay recordatorios programados.'))
-      for (const r of items) {
-        const f = el('div', 'fila-item'), t = el('div', 't', r.text); t.append(el('small', '', r.cuando + (r.repeat === 'daily' ? ' · todos los días' : r.repeat === 'weekdays' ? ' · lunes a viernes' : '')))
-        const b = el('button', 'pel', 'Cancelar'); b.onclick = async () => { await api('/api/recordatorios/' + r.id, { method: 'DELETE' }); pintarAuto(); N.cargarRecs() }
-        f.append(t, b); l.append(f)
-      }
-    } catch (e) { alFallar(e) }
-  }
-  $('fRec').addEventListener('submit', async (e) => {
-    e.preventDefault()
-    try { await api('/api/recordatorios', { method: 'POST', body: JSON.stringify({ text: $('recTxt').value, at: $('recAt').value + ':00', repeat: $('recRep').value }) }); $('recTxt').value = ''; pintarAuto(); N.cargarRecs() } catch (x) { alFallar(x) }
-  })
-
   // ---- configuración
   async function pintarConf() {
     try {
@@ -147,13 +131,16 @@
       $('fCarp').hidden = !e.local; const ap = $('lApps'); ap.replaceChildren()
       if (!e.local) ap.append(el('p', 'sub peq', 'Disponible al ejecutar Nova en su computadora.'))
       else for (const n of e.apps) { const lab = el('label'), i = el('input'); i.type = 'checkbox'; i.checked = a.apps.includes(n); i.onchange = () => guardarAjustes({ apps: e.apps.filter((x) => (x === n ? i.checked : a.apps.includes(x))) }); lab.append(i, el('span', '', n)); ap.append(lab) }
+      const vz = await api('/api/voz').catch(() => null); const kc = await api('/api/claves').catch(() => null)
+      if (kc) { $('vEstab').value = kc.vozParams.estab; $('vSim').value = kc.vozParams.sim; $('vEstilo').value = kc.vozParams.estilo; $('vVel').value = kc.vozParams.vel }
       const lc2 = $('lCon'); lc2.replaceChildren()
-      for (const [n, v] of [['Claude (cerebro)', 'sesión del servidor'], ['Voz de ElevenLabs', e.voz ? 'conectada' : 'no configurada: usa la voz del navegador'], ['Otras IAs (OpenAI / Gemini)', e.ias.length ? 'conectadas: ' + e.ias.join(', ') : 'sin clave: el consejo usa solo Claude + Wikipedia'], ['Home Assistant', e.casa ? 'conectado' : 'no configurado'], ['Control del equipo', e.local ? 'disponible' : 'no disponible en esta instalación']]) { const f = el('li', 'fila-item'); const t = el('div', 't', n); t.append(el('small', '', v)); f.append(t); lc2.append(f) }
+      for (const [n, v] of [['Claude (cerebro)', 'sesión del servidor'], ['Voz de ElevenLabs', vz ? (vz.ok ? 'conectada: ' + (vz.nombre || vz.id) : vz.motivo) : 'comprobando…'], ['Otras IAs (OpenAI / Gemini)', e.ias.length ? 'conectadas: ' + e.ias.join(', ') : 'sin clave: el consejo usa solo Claude + Wikipedia'], ['Videos (YouTube)', kc?.youtube ? 'conectado' : 'sin clave: usa Wikimedia Commons y un enlace a YouTube'], ['Imágenes', 'Wikimedia Commons y Openverse (licencias abiertas)'], ['Home Assistant', e.casa ? 'conectado' : 'no configurado'], ['Control del equipo', e.local ? 'disponible' : 'no disponible en esta instalación']]) { const f = el('li', 'fila-item'); const t = el('div', 't', n); t.append(el('small', '', v)); f.append(t); lc2.append(f) }
     } catch (x) { alFallar(x) }
   }
   async function guardarAjustes(p) { try { N.aplicarAjustes(await api('/api/ajustes', { method: 'PUT', body: JSON.stringify(p) })); pintarConf() } catch (e) { alFallar(e) } }
-  $('fClaves').addEventListener('submit', async (e) => { e.preventDefault(); const d = {}; for (const [k, id] of [['gemini', 'kGemini'], ['openai', 'kOpenai'], ['eleven', 'kEleven'], ['voiceId', 'kVoz']]) { const v = $(id).value.trim(); if (v) d[k] = v }
-    if (!Object.keys(d).length) return; try { await api('/api/claves', { method: 'PUT', body: JSON.stringify(d) }); for (const id of ['kGemini', 'kOpenai', 'kEleven', 'kVoz']) $(id).value = ''; N.state.serverVoz = true; pintarConf(); N.aviso?.('Claves guardadas.') } catch (x) { alFallar(x) } })
+  $('fClaves').addEventListener('submit', async (e) => { e.preventDefault(); const d = {}; for (const [k, id] of [['gemini', 'kGemini'], ['openai', 'kOpenai'], ['eleven', 'kEleven'], ['voiceId', 'kVoz'], ['youtube', 'kYt']]) { const v = $(id).value.trim(); if (v) d[k] = v }
+    if (!Object.keys(d).length) return; try { await api('/api/claves', { method: 'PUT', body: JSON.stringify(d) }); for (const id of ['kGemini', 'kOpenai', 'kEleven', 'kVoz', 'kYt']) $(id).value = ''; N.state.serverVoz = true; pintarConf(); N.aviso?.('Claves guardadas.') } catch (x) { alFallar(x) } })
+  $('fVoz').addEventListener('submit', async (e) => { e.preventDefault(); const d = { vEstab: $('vEstab').value.trim(), vSim: $('vSim').value.trim(), vEstilo: $('vEstilo').value.trim(), vVel: $('vVel').value.trim() }; try { await api('/api/claves', { method: 'PUT', body: JSON.stringify(d) }); N.aviso('Voz guardada.'); pintarConf() } catch (x) { alFallar(x) } })
   $('cfgNombre').addEventListener('change', () => guardarAjustes({ nombre: $('cfgNombre').value }))
   $('cfgIdioma').addEventListener('change', () => guardarAjustes({ idioma: $('cfgIdioma').value }))
   $('cfgVoz').addEventListener('change', () => guardarAjustes({ voz: $('cfgVoz').checked }))

@@ -6,8 +6,10 @@ import { guardarConv, leerConv, listarConv, borrarConv } from './conversaciones.
 import { casaConfigurada } from './casa.mjs'
 import { proveedoresExternos } from './fuentes.mjs'
 import { estadoClaves, guardarClaves } from './claves.mjs'
+import { manejarApi2 } from './api2.mjs'
 
-export async function manejarApi(req, res, url, { json, body, voz }) {
+export async function manejarApi(req, res, url, { json, body, voz, runner }) {
+  if (await manejarApi2(req, res, url, { json, body, runner })) return true
   const p = url.pathname, m = req.method
   const seg = p.split('/').filter(Boolean) // ['api', ...]
   if (seg[0] !== 'api') return false
@@ -46,7 +48,7 @@ export async function manejarApi(req, res, url, { json, body, voz }) {
   if (p === '/api/conversaciones' && m === 'GET') return json(res, 200, { items: listarConv() }), true
   if (seg[1] === 'conversaciones' && seg[2]) {
     if (m === 'GET') { const c = leerConv(seg[2]); return c ? json(res, 200, c) : json(res, 404, { error: 'No existe.' }), true }
-    if (m === 'PUT') { const d = await leer(512 * 1024); if (!d) return true; try { return json(res, 200, { ok: Boolean(guardarConv(seg[2], d.msgs)) }), true } catch (e) { return fallo(e), true } }
+    if (m === 'PUT') { const d = await leer(512 * 1024); if (!d) return true; try { return json(res, 200, { ok: Boolean(guardarConv(seg[2], d.msgs, d.proyecto)) }), true } catch (e) { return fallo(e), true } }
     if (m === 'DELETE') return json(res, 200, { ok: borrarConv(seg[2]) }), true
   }
   return false

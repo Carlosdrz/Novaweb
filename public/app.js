@@ -1,6 +1,6 @@
 'use strict'
 const $ = (id) => document.getElementById(id)
-const state = { msgs: [], busy: false, ctl: null, voz: true, serverVoz: false, escucha: false, wakeUntil: 0, convId: null, aj: null, nombre: 'Nova', lang: 'es-DO' }
+const state = { msgs: [], busy: false, ctl: null, voz: true, serverVoz: false, escucha: false, wakeUntil: 0, convId: null, proyecto: null, proyectoNombre: '', aj: null, nombre: 'Nova', lang: 'es-DO' }
 const nuevoId = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => (b % 36).toString(36)).join('')
 const api = async (url, o = {}) => { const r = await fetch(url, { ...o, headers: { 'content-type': 'application/json', ...(o.headers ?? {}) } }); if (r.status === 401) { location.reload(); throw new Error('sesión') } const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Error'); return j }
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -16,7 +16,7 @@ async function arrancar() {
   $('vozInfo').textContent = p.voz ? 'ElevenLabs' : 'Navegador'
   if (!SR) { $('mic').hidden = true; $('escBtn').hidden = true }
   vacio()
-  cargarRecs(); setInterval(avisar, 15000); avisar()
+  cargarRecs(); window.Nova.recientes?.(); setInterval(avisar, 15000); avisar()
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { avisar(); cargarRecs() } })
   document.addEventListener('pointerdown', desbloquear, { once: true })
   try { if ('Notification' in window && Notification.permission === 'default') document.addEventListener('pointerdown', () => Notification.requestPermission(), { once: true }) } catch {}
@@ -24,12 +24,22 @@ async function arrancar() {
   let apagado = false; try { apagado = localStorage.getItem('nova-escucha') === '0' } catch {}
   if (SR && !apagado) activarEscucha(true)
 }
+// ---------- proyecto activo ----------
+function fijarProyecto(id, nombre) {
+  state.proyecto = id || null; state.proyectoNombre = nombre || ''
+  try { id ? localStorage.setItem('nova-proy', JSON.stringify({ id, nombre })) : localStorage.removeItem('nova-proy') } catch {}
+  $('chipProy').hidden = !id; $('chipProyTxt').textContent = id ? 'Proyecto: ' + nombre : ''
+}
+$('chipProyX').onclick = () => { fijarProyecto(null); detener(); vacio(); state.convId = null }
+try { const g = JSON.parse(localStorage.getItem('nova-proy') || 'null'); if (g?.id) fijarProyecto(g.id, g.nombre) } catch {}
 async function cargarRecs() {
   try {
-    const r = await fetch('/api/recordatorios'); if (!r.ok) return
-    const { items } = await r.json(); const ul = $('recs'); ul.innerHTML = ''
-    if (!items.length) { ul.innerHTML = '<li class="tenue">Ninguno</li>'; return }
-    for (const it of items) { const li = document.createElement('li'); li.textContent = it.text; const s = document.createElement('small'); s.textContent = it.cuando + (it.repeat === 'daily' ? ' · diario' : it.repeat === 'weekdays' ? ' · lun-vie' : ''); li.append(s); ul.append(li) }
+    const [a, b] = await Promise.all([fetch('/api/recordatorios').then((r) => (r.ok ? r.json() : { items: [] })), fetch('/api/programadas').then((r) => (r.ok ? r.json() : { items: [] }))])
+    const fm = (t) => new Date(t).toLocaleString('es', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+    const items = [...a.items.map((r) => ({ t: r.text, c: r.cuando, k: 0 })), ...b.items.filter((x) => x.activo).map((x) => ({ t: x.titulo, c: fm(x.at) + (x.repeat !== 'none' ? ' · ' + ({ daily: 'diaria', weekdays: 'lun-vie', weekly: 'semanal' })[x.repeat] : ''), k: x.at }))].slice(0, 5)
+    const ul = $('recs'); ul.replaceChildren()
+    if (!items.length) { const li = document.createElement('li'); li.className = 'tenue'; li.textContent = 'Nada programado'; ul.append(li); return }
+    for (const it of items) { const li = document.createElement('li'); li.textContent = it.t; const sm = document.createElement('small'); sm.textContent = it.c; li.append(sm); ul.append(li) }
   } catch {}
 }
 async function avisar() {
@@ -101,7 +111,7 @@ $('vozBtn').onclick = () => { state.voz = !state.voz; api('/api/ajustes', { meth
 
 // ---------- voz de salida ----------
 const player = new Audio()
-let cola = [], hablando = false, genVoz = 0
+let cola = [], hablando = false, genVoz = 0, ultimoDicho = ''
 function desbloquear() {
   try { if (!window.__conectado) { window.__conectado = true; window.novaConectarAudio?.(player) } } catch {}
   try { window.__novaAC?.resume() } catch {}
@@ -116,21 +126,23 @@ function sintetizar(texto, g) {
   return new Promise((ok) => {
     try {
       const u = new SpeechSynthesisUtterance(texto); u.lang = state.lang; u.pitch = 0.82; u.rate = 0.97; const v = vozEs(); if (v) u.voice = v
-      u.onend = u.onerror = () => ok(); speechSynthesis.speak(u)
+      u.onstart = marcaAudio; u.onend = u.onerror = () => ok(); speechSynthesis.speak(u)
     } catch { ok() }
   })
 }
-async function pedirAudio(texto) {
-  const r = await fetch('/api/tts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: texto }) })
+async function pedirAudio(texto, prev) {
+  const r = await fetch('/api/tts', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: texto, prev }) })
   if (!r.ok) throw new Error('tts')
   return URL.createObjectURL(await r.blob())
 }
+function marcaAudio() { if (M && M.audio == null) M.audio = performance.now() - M.t0; if (M && M.audio != null) $('latAudio').textContent = (M.audio / 1000).toFixed(1) + ' s' }
+let M = null
 function reproducir(url) {
-  return new Promise((ok, mal) => { player.onended = () => { URL.revokeObjectURL(url); ok() }; player.onerror = () => mal(new Error('audio')); player.src = url; player.play().catch(mal) })
+  return new Promise((ok, mal) => { player.onplaying = marcaAudio; player.onended = () => { URL.revokeObjectURL(url); ok() }; player.onerror = () => mal(new Error('audio')); player.src = url; player.play().catch(mal) })
 }
 function decir(texto) {
   if (!state.voz || !texto.trim()) return
-  const item = { texto, url: state.serverVoz ? pedirAudio(texto).catch(() => null) : Promise.resolve(null) }
+  const item = { texto, url: state.serverVoz ? pedirAudio(texto, ultimoDicho).catch(() => null) : Promise.resolve(null) }; ultimoDicho = texto
   cola.push(item); if (!hablando) bombear(++genVoz)
 }
 async function bombear(g) {
@@ -150,23 +162,25 @@ async function enviar(texto) {
   texto = texto.trim(); if (!texto) return
   if (state.busy) detener()
   aviso(''); callar()
+  const vis = window.NovaMedios?.detectar(texto)
+  if (vis) return enviarVisual(texto, vis)
   state.msgs.push({ role: 'user', content: texto }); burbuja('user', texto); try { window.novaTema?.(texto) } catch {}
   $('cuenta').textContent = state.msgs.length
   const b = burbuja('n', ''); b.classList.add('act')
   state.busy = true; $('enviar').hidden = true; $('parar').hidden = false; estado('pensando', 'Pensando')
   const ctl = new AbortController(); state.ctl = ctl
-  const t0 = performance.now(); let primero = false, acc = '', buf = '', pend = ''
+  const t0 = performance.now(); let primero = false, acc = '', buf = '', pend = '', primeroDicho = false; M = { t0, audio: null, token: null }; $('latAudio').textContent = '—'
   const soltar = (todo) => {
     pend += buf; buf = ''
     for (;;) {
-      const m = pend.match(/^([\s\S]{20,}?[.!?…:](?=\s)|[\s\S]*?\n)/)
+      const m = pend.match(primeroDicho ? /^([\s\S]{20,}?[.!?…:](?=\s)|[\s\S]*?\n)/ : /^([\s\S]{34,}?[,;:.!?…](?=\s)|[\s\S]*?\n)/)
       if (!m) break
-      decir(m[0].trim()); pend = pend.slice(m[0].length)
+      decir(m[0].trim()); primeroDicho = true; pend = pend.slice(m[0].length)
     }
     if (todo && pend.trim()) { decir(pend.trim()); pend = '' }
   }
   try {
-    const r = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: state.msgs }), signal: ctl.signal })
+    const r = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: state.msgs, proyecto: state.proyecto }), signal: ctl.signal })
     if (r.status === 401) { location.reload(); return }
     if (!r.ok || !r.body) throw new Error((await r.json().catch(() => ({}))).error || 'Error de conexión.')
     const rd = r.body.getReader(), dec = new TextDecoder(); let resto = ''
@@ -178,7 +192,7 @@ async function enviar(texto) {
         if (!p.startsWith('data: ')) continue
         const ev = JSON.parse(p.slice(6))
         if (ev.t === 'text') {
-          if (!primero) { primero = true; $('lat').textContent = ((performance.now() - t0) / 1000).toFixed(1) + ' s'; estado('hablando', 'Respondiendo') }
+          if (!primero) { primero = true; M.token = performance.now() - t0; $('lat').textContent = ((performance.now() - t0) / 1000).toFixed(1) + ' s'; estado('hablando', 'Respondiendo') }
           acc += ev.text; buf += ev.text; b.textContent = acc; $('log').scrollTop = $('log').scrollHeight; soltar(false)
         } else if (ev.t === 'tool') {
           const d = document.createElement('div'); d.className = 'tool'; d.textContent = '⚙ ' + (ev.detalle || ev.name); b.parentElement.before(d); estado('ejecutando', ev.name || 'Ejecutando')
@@ -193,6 +207,7 @@ async function enviar(texto) {
     if (e.name !== 'AbortError') { aviso(e.message || 'Fallo al responder.'); if (!acc) b.parentElement.remove(); estado('error', 'Error') }
     else if (acc.trim()) state.msgs.push({ role: 'assistant', content: acc.trim() })
   } finally {
+    if (M && M.token != null) { const x = M; setTimeout(() => api('/api/metricas', { method: 'POST', body: JSON.stringify({ token: x.token, audio: x.audio, total: performance.now() - x.t0, voz: state.serverVoz ? 'eleven' : 'navegador' }) }).catch(() => {}), 4000) }
     cargarRecs(); b.classList.remove('act'); state.busy = false; state.ctl = null; cerrarModal(); guardarConv()
     $('enviar').hidden = false; $('parar').hidden = true
     if (!hablando && $('punto').className.indexOf('error') < 0) fin()
@@ -201,8 +216,23 @@ async function enviar(texto) {
 function guardarConv() {
   if (!state.msgs.length) return
   if (!state.convId) state.convId = nuevoId()
-  api('/api/conversaciones/' + state.convId, { method: 'PUT', body: JSON.stringify({ msgs: state.msgs }) }).catch(() => {})
+  api('/api/conversaciones/' + state.convId, { method: 'PUT', body: JSON.stringify({ msgs: state.msgs, proyecto: state.proyecto }) }).then(() => window.Nova.recientes?.()).catch(() => {})
 }
+// petición visual: se muestra de inmediato, sin esperar al modelo
+async function enviarVisual(texto, { tipo, q }) {
+  aviso(''); state.msgs.push({ role: 'user', content: texto }); burbuja('user', texto)
+  state.busy = true; $('enviar').hidden = true; $('parar').hidden = false; estado('ejecutando', tipo === 'video' ? 'Buscando videos' : 'Buscando imágenes')
+  const ctl = new AbortController(); state.ctl = ctl; const t0 = performance.now()
+  try {
+    const r = await window.NovaMedios.buscar(tipo, q, $('log'), { proyecto: state.proyecto, ctl })
+    if (r.estado === 'cancelado') return
+    const nom = tipo === 'video' ? 'video' : 'imagen', plural = r.total === 1 ? nom : nom + 's'
+    const dicho = r.total ? `Aquí tiene, Señor: ${r.total} ${plural} de ${q}. Toque cualquiera para verla más grande.` : r.estado === 'error' ? 'Señor, no pude completar esa búsqueda ahora mismo.' : `Señor, no encontré ${nom}s de ${q}. Puede probar con otras palabras.`
+    burbuja('nova', dicho); state.msgs.push({ role: 'assistant', content: r.total ? `Mostré ${r.total} ${plural} de «${q}».` : `No encontré ${nom}s de «${q}».` })
+    $('lat').textContent = ((performance.now() - t0) / 1000).toFixed(1) + ' s'; decir(dicho)
+  } finally { state.busy = false; state.ctl = null; $('enviar').hidden = false; $('parar').hidden = true; guardarConv(); window.Nova.historialCambio?.(); if (!hablando) fin() }
+}
+
 // ---------- confirmaciones ----------
 let confId = null
 function pedirConfirmacion(ev) {
@@ -310,5 +340,5 @@ function despertar() {
   if (SR) escuchaUna(); else { estado('escuchando', 'Dígame'); $('txt').focus() }
 }
 
-window.Nova = { state, api, aviso, ir: () => {}, cargarConv: null, cargarAjustes, aplicarAjustes, cargarRecs, activarEscucha: (v) => activarEscucha(v), micUI }
+window.Nova = { state, api, aviso, ir: () => {}, cargarConv: null, fijarProyecto, nueva: () => { detener(); vacio(); aviso(''); state.convId = null }, decirTexto: (t) => decirYa(t), vacio, cargarAjustes, aplicarAjustes, cargarRecs, activarEscucha: (v) => activarEscucha(v), micUI }
 arrancar()
