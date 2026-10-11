@@ -81,15 +81,15 @@
 
   function crear(cv) {
     const cx = cv.getContext('2d'), sm = document.createElement('canvas'), sx = sm.getContext('2d'), sm2 = document.createElement('canvas'), sx2 = sm2.getContext('2d')
-    const MAXP = 5200, asign = {}
+    const MAXP = 12000, asign = {}
     for (const f of 'ABC') {
       const g = GEO[f](0).li, wt = g.map((l) => l.b * Math.sqrt(l.w) * (l.st ? 0.4 : 1)), tot = wt.reduce((a, b) => a + b, 0), cum = []; let ac = 0; for (const w of wt) { ac += w / tot; cum.push(ac) }
       asign[f] = { k: Array.from({ length: MAXP }, () => { const r = rnd(); let i = cum.findIndex((c) => r <= c); return i < 0 ? cum.length - 1 : i }), s: Array.from({ length: MAXP }, rnd) }
     }
     const PSP = Array.from({ length: MAXP }, () => (0.01 + rnd() * 0.05) * (rnd() < 0.5 ? -1 : 1)), PD = Array.from({ length: MAXP }, rnd), PB = Array.from({ length: MAXP }, () => 0.35 + 0.65 * Math.pow(rnd(), 2))
     const PDIR = Array.from({ length: MAXP }, () => { const v = [rnd() - 0.5, rnd() - 0.5, rnd() - 0.5], n = Math.hypot(...v) || 1; return v.map((x) => x / n) })
-    const DUST = Array.from({ length: 700 }, () => [(rnd() - 0.5) * 4.4, (rnd() - 0.5) * 4.4, (rnd() - 0.5) * 4.4]), DV = DUST.map(() => [(rnd() - 0.5) * 0.04, (rnd() - 0.5) * 0.04, (rnd() - 0.5) * 0.04])
-    let cur = 'A', to = 'A', u = 0, pend = null, T = 0, fase = 0, nPart = 2800, ms = 16, acc = 0, nAcc = 0, W = 0
+    const DUST = Array.from({ length: 1700 }, () => [(rnd() - 0.5) * 4.4, (rnd() - 0.5) * 4.4, (rnd() - 0.5) * 4.4]), DV = DUST.map(() => [(rnd() - 0.5) * 0.04, (rnd() - 0.5) * 0.04, (rnd() - 0.5) * 0.04])
+    let cur = 'A', to = 'A', u = 0, pend = null, T = 0, fase = 0, nPart = 6500, ms = 16, acc = 0, nAcc = 0, W = 0
     const ondas = []; let ultOnda = 0
     const api = {
       get forma() { return INV[u > 0.5 ? to : cur] }, get transicion() { return cur === to ? 0 : u },
