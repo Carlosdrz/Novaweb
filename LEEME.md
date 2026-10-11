@@ -43,3 +43,8 @@ Render plan Starter (unos 7 USD al mes): siempre encendido y con disco, para que
 - Los avisos se dicen en voz alta con la página abierta; si estaba cerrada, se dicen al abrirla (hasta 24 h después).
 - Cuando llega un correo de las dos cuentas vigiladas, Nova dice el remitente y el asunto. Nunca lee el contenido.
 - Lo que le cuente de usted lo recuerda (se guarda en `/data`).
+
+## Fuentes de datos
+
+- Carpeta `knowledge/`: ponga ahí archivos `.md`, `.txt`, `.csv` o `.json` con sus datos (horarios, contactos, apuntes). Nova los consulta antes de responder. Se suben con el repositorio.
+- Titulares diarios: Nova trae cada 6 horas noticias de BBC Mundo, DW, Diario Libre, Listín Diario, Xataka y NASA. Cambie las fuentes con `NOVA_FUENTES`; apáguelo con `NOVA_NOTICIAS=off`.
