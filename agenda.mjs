@@ -21,6 +21,7 @@ import { z } from 'zod'
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
+import { permiso, registrar } from './seguridad.mjs'
 
 const HOME_DIR = process.env.NOVA_DATA_DIR ?? join(process.cwd(), 'data')
 const TZ = 'America/Santo_Domingo'
@@ -147,9 +148,11 @@ function readFacts() {
 }
 const saveFacts = (lines) => writeAtomic(MEMORY, `# Lo que Nova recuerda de ti\n\n${lines.join('\n')}${lines.length ? '\n' : ''}`)
 
-export function rememberFact(fact) {
+const SENSIBLE = /(contrase|password|passcode|\bpin\b|\bcvv\b|\btoken\b|api[ _-]?key|secret|clave (de|del|privada)|tarjeta|cuenta bancaria|\b\d{13,19}\b|\b\d{3}-?\d{7}-?\d\b)/i
+export function rememberFact(fact, opts = {}) {
   const clean = String(fact ?? '').replace(/\s+/g, ' ').replace(/^[-•\s]+/, '').trim().slice(0, 300)
   if (clean.length < 3) throw new Error('el dato es demasiado corto')
+  if (!opts.manual && SENSIBLE.test(clean)) throw new Error('parece información sensible (contraseña, tarjeta, clave…) y no la guardo sin su autorización expresa en la sección Memoria')
   const lines = readFacts()
   const key = clean.toLowerCase()
   if (lines.some((l) => l.toLowerCase().includes(key))) return { fact: clean, duplicate: true }
@@ -160,6 +163,15 @@ export function rememberFact(fact) {
 }
 
 export const listFacts = () => readFacts().map((l) => l.slice(2))
+export function editFact(i, text) {
+  const lines = readFacts(); if (!(i >= 0 && i < lines.length)) throw new Error('no existe ese recuerdo')
+  const clean = String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, 300); if (clean.length < 3) throw new Error('el dato es demasiado corto')
+  lines[i] = `- ${clean} (${today()})`; saveFacts(lines)
+}
+export function deleteFactAt(i) {
+  const lines = readFacts(); if (!(i >= 0 && i < lines.length)) throw new Error('no existe ese recuerdo')
+  lines.splice(i, 1); saveFacts(lines)
+}
 
 export function forgetFact(query) {
   const q = String(query ?? '').trim().toLowerCase()
@@ -172,6 +184,7 @@ export function forgetFact(query) {
 
 /** Bloque para el prompt: lo que Nova ya sabe de ti al empezar la conversación. */
 export function memoryForPrompt() {
+  if (!permiso('memoria')) return ''
   const facts = listFacts()
   if (!facts.length) return ''
   let out = ''
@@ -229,11 +242,13 @@ export function agendaServer() {
           repeat: z.enum(['none', 'daily', 'weekdays']).optional().catch('none').describe('daily = every day at that time; weekdays = Monday to Friday. Use for daily tasks and routines.'),
         },
         async (args) => {
+          if (!permiso('agenda')) return ok('Los recordatorios están desactivados en Configuración.')
           try {
             const mins = args.in_minutes === undefined ? NaN : Number(args.in_minutes)
             const raw = String(args.at ?? '')
             const atMs = Number.isFinite(mins) ? Date.now() + mins * 60000 : Date.parse(/(Z|[+-]\d\d:?\d\d)$/.test(raw) ? raw : raw + '-04:00')
             const r = addReminder({ text: args.text, atMs, repeat: args.repeat })
+            registrar('set_reminder', `Recordatorio: ${r.text}`, 'ok')
             return ok(`Recordatorio ${r.id} guardado: "${r.text}" ${describeWhen(r.at).replace(/\.$/, '')}${r.repeat === 'daily' ? ', todos los días' : r.repeat === 'weekdays' ? ', de lunes a viernes' : ''}.`)
           } catch (e) {
             return ok(`No se guardó: ${e.message}.`)
@@ -256,6 +271,7 @@ export function agendaServer() {
         { query: z.string().describe('The reminder id, or a word from its text.') },
         async ({ query }) => {
           const gone = cancelReminder(query)
+          registrar('cancel_reminder', query, gone.length ? 'ok' : 'sin coincidencias')
           return ok(gone.length ? `Cancelado: ${gone.map((r) => `"${r.text}"`).join(', ')}.` : 'No encontré ese recordatorio.')
         },
       ),
@@ -268,8 +284,10 @@ export function agendaServer() {
           'Write it as a short, neutral third-person fact: "Es alérgico a las nueces."',
         { fact: z.string().describe('One short fact about the user.') },
         async ({ fact }) => {
+          if (!permiso('memoria')) return ok('La memoria está desactivada en Configuración; no anoté nada.')
           try {
             const r = rememberFact(fact)
+            registrar('remember_fact', r.fact, 'ok')
             return ok(r.duplicate ? 'Ya lo tenía anotado.' : `Anotado: ${r.fact}`)
           } catch (e) {
             return ok(`No se anotó: ${e.message}.`)
@@ -278,6 +296,7 @@ export function agendaServer() {
       ),
 
       tool('list_facts', 'Everything you remember about the user.', {}, async () => {
+        if (!permiso('memoria')) return ok('La memoria está desactivada.')
         const facts = listFacts()
         return ok(facts.length ? facts.map((f) => `- ${f}`).join('\n') : 'Todavía no recuerdo nada de usted.')
       }),
@@ -288,7 +307,9 @@ export function agendaServer() {
           'when they ask you to forget something.',
         { query: z.string().describe('A word or phrase from the fact to forget.') },
         async ({ query }) => {
+          if (!permiso('memoria')) return ok('La memoria está desactivada.')
           const n = forgetFact(query)
+          registrar('forget_fact', query, n ? 'ok' : 'sin coincidencias')
           return ok(n ? `Olvidado (${n}).` : 'No encontré nada con eso.')
         },
       ),
