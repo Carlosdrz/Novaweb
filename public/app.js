@@ -9,7 +9,7 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition
 async function ping() { try { const r = await fetch('/api/ping'); return r.ok ? await r.json() : null } catch { return null } }
 async function arrancar() {
   const p = await ping()
-  if (!p) { $('login').hidden = false; $('app').hidden = true; return }
+  if (!p) { $('login').hidden = false; $('app').hidden = true; prepararLogin(); return }
   $('login').hidden = true; $('app').hidden = false
   state.serverVoz = p.voz
   await cargarAjustes()
@@ -40,11 +40,19 @@ async function avisar() {
     if (avisos.length) cargarRecs()
   } catch { if (!state.busy) estado('error', 'Sin conexión') }
 }
+let primera = false
+async function prepararLogin() {
+  try { const { configurada } = await (await fetch('/api/acceso')).json(); primera = !configurada } catch {}
+  $('pw2').hidden = !primera; $('loginMsg').hidden = !primera; $('pw2').required = primera
+  $('loginForm').querySelector('button').textContent = primera ? 'Crear contraseña y entrar' : 'Entrar'
+  $('pw').autocomplete = primera ? 'new-password' : 'current-password'
+}
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault(); $('loginErr').textContent = ''
   desbloquear()
-  const r = await fetch('/api/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: $('pw').value }) })
-  if (r.ok) { $('pw').value = ''; arrancar() } else $('loginErr').textContent = (await r.json().catch(() => ({}))).error || 'No se pudo entrar.'
+  if (primera && $('pw').value !== $('pw2').value) { $('loginErr').textContent = 'Las contraseñas no coinciden.'; return }
+  const r = await fetch(primera ? '/api/configurar' : '/api/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: $('pw').value }) })
+  if (r.ok) { $('pw').value = ''; $('pw2').value = ''; arrancar() } else $('loginErr').textContent = (await r.json().catch(() => ({}))).error || 'No se pudo entrar.'
 })
 $('salir').onclick = async () => { await fetch('/api/logout', { method: 'POST' }); location.reload() }
 

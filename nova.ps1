@@ -35,14 +35,8 @@ Write-Host "Preparando piezas..." -ForegroundColor DarkCyan
 npm install --no-audit --no-fund --loglevel=error
 if ($LASTEXITCODE -ne 0) { Fin "Fallo la instalacion de piezas. Revise su conexion a internet." }
 
-# 4) Contrasena (se guarda solo en este equipo)
-if (-not $env:NOVA_PASSWORD) {
-  if (Test-Path "$dir\nova.clave") { $env:NOVA_PASSWORD = (Get-Content "$dir\nova.clave" -Raw).Trim() }
-  else {
-    $env:NOVA_PASSWORD = Read-Host "Elija una contrasena para entrar a Nova (minimo 8 caracteres)"
-    Set-Content "$dir\nova.clave" $env:NOVA_PASSWORD
-  }
-}
+# 4) Contrasena: se crea o se escribe en la propia pagina de Nova (nunca en esta ventana)
+if (-not $env:NOVA_PASSWORD -and (Test-Path "$dir\nova.clave")) { $env:NOVA_PASSWORD = (Get-Content "$dir\nova.clave" -Raw).Trim() }
 
 # 4b) Cerrar copias anteriores de Nova que sigan abiertas (si no, el navegador mostraria la version vieja)
 try {

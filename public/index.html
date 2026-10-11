@@ -20,7 +20,9 @@
     <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><use class="anillo" href="#m-anillo"/><use href="#m-n"/></svg>
     <div class="marca" aria-label="NOVA">NOVA</div>
     <label for="pw" class="sr">Contraseña</label>
+    <p id="loginMsg" class="sub" hidden>Primera vez: cree la contraseña con la que entrará a Nova.</p>
     <input id="pw" type="password" autocomplete="current-password" placeholder="Contraseña" required>
+    <input id="pw2" type="password" autocomplete="new-password" placeholder="Repita la contraseña" hidden>
     <button type="submit">Entrar</button>
     <p id="loginErr" class="err" role="alert"></p>
   </form>
