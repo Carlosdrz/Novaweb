@@ -72,3 +72,18 @@ test('proyecto: archivo movido se marca no disponible', async () => {
   await new Promise((r) => setTimeout(r, 50)); const full = PJ.obtenerProyecto(p.id); const a = full.archivos.find((x) => x.nombre === 'borrar.txt')
   assert.equal(a.disponible, false); assert.match(a.motivo, /ya no está/)
 })
+
+test('vía rápida: transmite Gemini y cae a ChatGPT si falla', async () => {
+  const F = await import('../fuentes.mjs')
+  const srv = http.createServer((q, r) => {
+    if (q.url.includes('streamGenerateContent')) { r.statusCode = 500; return r.end('x') }
+    r.setHeader('content-type', 'text/event-stream')
+    r.write('data: ' + JSON.stringify({ choices: [{ delta: { content: 'Hola ' } }] }) + '\n\n'); r.write('data: ' + JSON.stringify({ choices: [{ delta: { content: 'Señor.' } }] }) + '\n\ndata: [DONE]\n\n'); r.end()
+  })
+  await new Promise((ok) => srv.listen(0, ok)); const u = `http://127.0.0.1:${srv.address().port}`
+  Object.assign(process.env, { GEMINI_API_KEY: 'g', OPENAI_API_KEY: 'o', GEMINI_BASE_URL: u, OPENAI_BASE_URL: u })
+  assert.ok(F.hayRapida()); let txt = ''
+  const via = await F.respuestaRapida([{ role: 'user', content: 'hola' }], (t) => { txt += t })
+  assert.equal(via, 'ChatGPT'); assert.equal(txt, 'Hola Señor.')
+  srv.closeAllConnections?.(); srv.close()
+})

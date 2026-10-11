@@ -18,7 +18,7 @@ import { notasServer } from './notas.mjs'
 import { equipoServer } from './equipo.mjs'
 import { casaServer, casaConfigurada } from './casa.mjs'
 import { manejarApi } from './api.mjs'
-import { fuentesServer, proveedoresExternos, respaldo } from './fuentes.mjs'
+import { fuentesServer, proveedoresExternos, respaldo, hayRapida, respuestaRapida } from './fuentes.mjs'
 import { cargarClaves } from './claves.mjs'
 import { proyectosServer, contextoProyecto } from './proyectos.mjs'
 import { iniciarProgramadas } from './programadas.mjs'
@@ -34,6 +34,7 @@ const hashPw = (pw, salt) => crypto.scryptSync(String(pw), salt, 32).toString('h
 const hayClave = () => PASSWORD.length >= 8 || Boolean(clave)
 const MODEL = process.env.NOVA_MODEL ?? 'claude-sonnet-5-5'
 const MODEL_RAPIDO = process.env.NOVA_MODEL_RAPIDO ?? 'claude-haiku-5-5'
+const NECESITA_HERRAMIENTAS = /recu[eé]rd|recordatori|agenda|cita|nota|correo|gmail|mail|abre|abrir|archivo|carpeta|proyecto|programa|tarea|luz|luces|casa|memoria|recuerda|olvida|busca(?:me)? (?:en mis|mis)|mi (?:agenda|calendario)/i
 const SIMPLE = (t) => t.length <= 48 && !/[\d=+*/^]|calcul|explic|por qu[eé]|c[oó]mo|analiz|compar|resum|document|program|c[oó]digo|proyecto|archivo/i.test(t)
 cargarClaves()
 const VOICE_ID_F = () => process.env.NOVA_VOICE_ID ?? 'ojGau167OE7nUATM1xDa'
@@ -200,6 +201,13 @@ async function chat(req, res) {
   const proyecto = /^[a-z0-9]{4,16}$/.test(data.proyecto ?? '') ? data.proyecto : null
   let any = false, head = '', sinSesion = false, fallo = false
   try {
+    const ultimo = msgs[msgs.length - 1].content
+    if (hayRapida() && !proyecto && ultimo.length < 600 && !NECESITA_HERRAMIENTAS.test(ultimo)) {
+      let emitido = false
+      const via = await respuestaRapida(msgs, (t) => { emitido = true; any = true; send({ t: 'text', text: t }) }, ac.signal).catch(() => null)
+      if (via) { registrar('respuesta rápida', via, 'ok'); send({ t: 'done' }); return }
+      if (emitido) { send({ t: 'done' }); return }
+    }
     await ctx.run({ send, ac, proyecto }, async () => {
     const a = ajustes(), perms = a.permisos
     const mcpServers = { nova_agenda: agendaServer(), nova_notas: notasServer(), nova_fuentes: fuentesServer() }

@@ -136,3 +136,31 @@ export function fuentesServer() {
     ],
   })
 }
+
+/** Vía rápida: responde en streaming con Gemini (con búsqueda de Google) o ChatGPT, sin arrancar el cerebro principal. */
+export const hayRapida = () => process.env.NOVA_RAPIDA !== '0' && !!(process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY)
+async function* sse(r) {
+  const dec = new TextDecoder(); let buf = ''
+  for await (const c of r.body) { buf += dec.decode(c, { stream: true }); let i; while ((i = buf.indexOf('\n')) >= 0) { const l = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (l.startsWith('data:')) { const d = l.slice(5).trim(); if (d && d !== '[DONE]') { try { yield JSON.parse(d) } catch {} } } } }
+}
+export async function respuestaRapida(msgs, onText, signal) {
+  const hist = msgs.slice(-8).map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }))
+  const abort = (s) => AbortSignal.any([signal, AbortSignal.timeout(s)].filter(Boolean))
+  const intentos = []; let hubo = false; const emit = onText; onText = (t) => { hubo = true; emit(t) }
+  if (process.env.GEMINI_API_KEY) intentos.push(async () => {
+    const base = process.env.GEMINI_BASE_URL ?? 'https://generativelanguage.googleapis.com/v1beta'
+    const r = await fetch(`${base}/models/${process.env.GEMINI_MODEL ?? 'gemini-2.0-flash'}:streamGenerateContent?alt=sse`, { method: 'POST', signal: abort(30000), headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ systemInstruction: { parts: [{ text: SYS_RESP }] }, tools: [{ google_search: {} }], contents: hist.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })) }) })
+    if (!r.ok) throw new Error('Gemini ' + r.status)
+    let n = 0; for await (const j of sse(r)) { const t = j?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''; if (t) { n += t.length; onText(t) } }
+    if (!n) throw new Error('vacío'); return 'Gemini'
+  })
+  if (process.env.OPENAI_API_KEY) intentos.push(async () => {
+    const base = process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1'
+    const r = await fetch(`${base}/chat/completions`, { method: 'POST', signal: abort(30000), headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'content-type': 'application/json' }, body: JSON.stringify({ model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini', stream: true, messages: [{ role: 'system', content: SYS_RESP }, ...hist], max_tokens: 700 }) })
+    if (!r.ok) throw new Error('OpenAI ' + r.status)
+    let n = 0; for await (const j of sse(r)) { const t = j?.choices?.[0]?.delta?.content ?? ''; if (t) { n += t.length; onText(t) } }
+    if (!n) throw new Error('vacío'); return 'ChatGPT'
+  })
+  for (const f of intentos) { try { return await f() } catch (e) { if (signal?.aborted || hubo) return hubo ? 'parcial' : null } }
+  return null
+}
