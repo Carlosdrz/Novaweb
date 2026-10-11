@@ -6,13 +6,13 @@
   const cv = document.getElementById('fx'), cx = cv.getContext('2d')
   const imgA = orbe.querySelector('.capa.a'), imgB = orbe.querySelector('.capa.b')
   let estado = 'reposo', activo = false, raf = 0, t0 = performance.now(), W = 0, H = 0
-  const P = { velAnillo: 0.2, energia: 0.15, tono: 150, brillo: 1 }
+  const P = { velAnillo: 0.2, energia: 0.15, tono: 200, brillo: 1 }
   const META = {
-    reposo:    { velAnillo: 0.15, energia: 0.12, tono: 150 },
-    escuchando:{ velAnillo: 0.5,  energia: 0.45, tono: 170 },
-    pensando:  { velAnillo: 2.4,  energia: 1,    tono: 135 },
-    ejecutando:{ velAnillo: 1.6,  energia: 0.85, tono: 175 },
-    hablando:  { velAnillo: 0.8,  energia: 0.7,  tono: 150 },
+    reposo:    { velAnillo: 0.15, energia: 0.12, tono: 200 },
+    escuchando:{ velAnillo: 0.5,  energia: 0.45, tono: 275 },
+    pensando:  { velAnillo: 2.4,  energia: 1,    tono: 190 },
+    ejecutando:{ velAnillo: 1.6,  energia: 0.85, tono: 185 },
+    hablando:  { velAnillo: 0.8,  energia: 0.7,  tono: 195 },
     error:     { velAnillo: 0.08, energia: 0.3,  tono: 2 },
   }
   // nivel de audio de la voz (ElevenLabs): analizador opcional
@@ -45,6 +45,13 @@
     { r: 0.58, w: 1.4, dash: [10, 6, 2, 6], v: 0.8, a: 0.65 },
     { r: 0.46, w: 2, dash: [60, 120], v: -1.1, a: 0.55 },
   ]
+  // giro táctil: arrastrar hace girar el holograma con inercia; un toque le da un impulso
+  let spin = 0, vel = 0, drag = false, ang0 = 0, mov = 0
+  const angulo = (e) => { const r = orbe.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) }
+  orbe.addEventListener('pointerdown', (e) => { drag = true; mov = 0; ang0 = angulo(e); vel = 0; orbe.classList.add('arrastra'); try { orbe.setPointerCapture(e.pointerId) } catch {} })
+  orbe.addEventListener('pointermove', (e) => { if (!drag) return; const a = angulo(e); let d = a - ang0; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; ang0 = a; spin += d; vel = d * 60; mov += Math.abs(d) })
+  const suelta = () => { if (!drag) return; drag = false; orbe.classList.remove('arrastra'); if (mov < 0.05) vel = 7 }
+  orbe.addEventListener('pointerup', suelta); orbe.addEventListener('pointercancel', suelta)
   const ondas = []; let ultOnda = 0, giro = 0, giro2 = 0, fase = 0
   const col = (a, l = 62) => `hsla(${P.tono},100%,${l}%,${a})`
 
@@ -54,11 +61,13 @@
     const m = META[estado] || META.reposo, k = 1 - Math.pow(0.001, dt)
     for (const q in m) P[q] += (m[q] - P[q]) * Math.min(1, k * 2.2)
     const lv = nivel(t), E = P.energia
+    if (!drag) { spin += vel * dt; vel *= Math.pow(0.12, dt) }
     giro += dt * P.velAnillo * 0.25; giro2 -= dt * (0.04 + P.velAnillo * 0.18); fase += dt * (1 + E * 3)
-    imgA.style.transform = `rotate(${giro * 57.3 * 0.35}deg) scale(${1 + 0.02 * Math.sin(t * 1.3) + lv * 0.05 + (estado === 'pensando' ? 0.02 * Math.sin(t * 7) : 0)})`
-    imgB.style.transform = `rotate(${giro2 * 57.3}deg) scale(1.1)`
-    imgA.style.filter = `hue-rotate(${P.tono - 210}deg) brightness(${1 + E * 0.18 + lv * 0.25}) saturate(${1 + E * 0.25})`
-    imgB.style.filter = `hue-rotate(${P.tono - 210}deg)`
+    imgA.style.transform = `rotate(${(giro * 0.35 + spin) * 57.3}deg) scale(${1 + 0.02 * Math.sin(t * 1.3) + lv * 0.05 + (estado === 'pensando' ? 0.02 * Math.sin(t * 7) : 0)})`
+    imgB.style.transform = `rotate(${(giro2 - spin * 0.6) * 57.3}deg) scale(1.1)`
+    cv.style.transform = `rotate(${spin * 57.3 * 0.5}deg)`
+    imgA.style.filter = `hue-rotate(${P.tono - 200}deg) brightness(${1 + E * 0.18 + lv * 0.25}) saturate(${1 + E * 0.25})`
+    imgB.style.filter = `hue-rotate(${P.tono - 200}deg)`
     resize(); const R = W / 2, c = R
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, W, H)
     cx.globalCompositeOperation = 'lighter'

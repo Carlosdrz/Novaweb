@@ -58,7 +58,7 @@ function orbe(s) {
   else { orbeT = setTimeout(() => { o.className = 'orbe' }, 2500) }
 }
 function estado(s, txt) {
-  orbe(s)
+  orbe(s); document.body.dataset.estado = s
   $('punto').className = 'punto ' + s
   $('estadoTxt').textContent = txt
 }

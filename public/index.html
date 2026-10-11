@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0d1210">
+<meta name="theme-color" content="#030a14">
 <title>NOVA</title>
 <link rel="icon" href="/icono.svg" type="image/svg+xml">
 <link rel="manifest" href="/nova.webmanifest">
@@ -13,11 +13,11 @@
 <link rel="stylesheet" href="/estilo.css">
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="marca" viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 5"/><path d="M14 35V13l20 22V13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/><circle cx="34" cy="13" r="2.6" fill="var(--luz)"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="m-anillo" viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 5"/></symbol><symbol id="m-n" viewBox="0 0 48 48"><path d="M14 35V13l20 22V13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/><circle cx="34" cy="13" r="2.6" fill="var(--luz)"/></symbol></svg>
 
 <main id="login" hidden>
   <form id="loginForm" class="login">
-    <svg class="logo" aria-hidden="true"><use href="#marca"/></svg>
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><use class="anillo" href="#m-anillo"/><use href="#m-n"/></svg>
     <div class="marca" aria-label="NOVA">NOVA</div>
     <label for="pw" class="sr">Contraseña</label>
     <input id="pw" type="password" autocomplete="current-password" placeholder="Contraseña" required>
@@ -28,7 +28,7 @@
 
 <div id="app" class="app" hidden>
   <header class="top">
-    <div class="ident"><svg class="logo" aria-hidden="true"><use href="#marca"/></svg><div class="marca" aria-label="NOVA">NOVA</div></div>
+    <div class="ident"><svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><use class="anillo" href="#m-anillo"/><use href="#m-n"/></svg><div class="marca" aria-label="NOVA">NOVA</div></div>
     <nav class="tabs" id="tabs" aria-label="Secciones">
       <button data-v="inicio" class="tab on">Inicio</button>
       <button data-v="conversaciones" class="tab">Conversaciones</button>
