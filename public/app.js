@@ -20,6 +20,7 @@ async function arrancar() {
   let quiere = false; try { quiere = localStorage.getItem('nova-escucha') === '1' } catch {}
   let perm = 'prompt'; try { perm = (await navigator.permissions.query({ name: 'microphone' })).state } catch {}
   if (SR && (quiere || perm === 'granted')) activarEscucha(true)
+  if (perm === 'granted' || quiere) iniciarClap()
 }
 async function cargarRecs() {
   try {
@@ -46,7 +47,15 @@ $('loginForm').addEventListener('submit', async (e) => {
 $('salir').onclick = async () => { await fetch('/api/logout', { method: 'POST' }); location.reload() }
 
 // ---------- pantalla ----------
+let orbeT = null
+function orbe(s) {
+  const o = $('orbe'); if (!o) return
+  clearTimeout(orbeT)
+  if (s === 'escuchando' || s === 'pensando' || s === 'hablando') { o.className = 'orbe on ' + s }
+  else { orbeT = setTimeout(() => { o.className = 'orbe' }, 2500) }
+}
 function estado(s, txt) {
+  orbe(s)
   $('punto').className = 'punto ' + s
   $('estadoTxt').textContent = txt
 }
@@ -185,6 +194,7 @@ function escuchaUna() {
   r.onend = () => { rec = null; $('mic').classList.remove('on'); const t = (final || $('txt').value).trim(); $('txt').value = ''; if (t) enviar(t); else if (!state.busy) estado('', 'En línea') }
   try { r.start(); $('mic').classList.add('on'); estado('escuchando', 'Escuchando') } catch { aviso('El micrófono no está disponible.') }
 }
+$('mic').addEventListener('click', iniciarClap)
 $('mic').onclick = () => { if (rec && modo === 'uno') { try { rec.stop() } catch {} } else escuchaUna() }
 
 const NOMBRE = /^\s*(?:oye|hola|hey|ok|okay)?[\s,]*nova\b[\s,.:!?-]*/i
@@ -205,15 +215,43 @@ function iniciarEscucha() {
   }
   r.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { state.escucha = false; $('escBtn').classList.remove('on'); aviso('Permita el micrófono en el navegador para que Nova escuche su nombre.') } }
   r.onend = () => { rec = null; if (state.escucha && !hablando && !state.busy) setTimeout(iniciarEscucha, 300) }
-  try { r.start(); if (!state.busy) estado('escuchando', 'Esperando «Nova»') } catch {}
+  try { r.start(); if (!state.busy) estado('espera', 'Esperando «Nova»') } catch {}
 }
 function decirYa(t) { const v = state.voz; state.voz = true; decir(t); state.voz = v }
 function activarEscucha(on) {
+  if (on) iniciarClap()
   state.escucha = on
   $('escBtn').classList.toggle('on', on); $('escBtn').setAttribute('aria-pressed', on)
   try { localStorage.setItem('nova-escucha', on ? '1' : '0') } catch {}
   if (on) iniciarEscucha(); else pararEscucha(false)
 }
 $('escBtn').onclick = () => { desbloquear(); activarEscucha(!state.escucha) }
+
+// ---------- aplauso ----------
+let clapIniciado = false
+async function iniciarClap() {
+  if (clapIniciado || !navigator.mediaDevices?.getUserMedia) return
+  clapIniciado = true
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } })
+    const ac = new (window.AudioContext || window.webkitAudioContext)(); const an = ac.createAnalyser(); an.fftSize = 1024
+    ac.createMediaStreamSource(s).connect(an)
+    const buf = new Float32Array(an.fftSize); let floor = 0.01, prev = 0, ultimo = 0
+    window.__clap = { rms: 0, floor: 0 }
+    setInterval(() => {
+      if (ac.state === 'suspended') ac.resume().catch(() => {})
+      an.getFloatTimeDomainData(buf)
+      let sum = 0, pk = 0; for (const v of buf) { sum += v * v; const a = Math.abs(v); if (a > pk) pk = a }
+      const rms = Math.sqrt(sum / buf.length), crest = pk / (rms + 1e-6), t = Date.now()
+      const golpe = rms > Math.max(0.06, floor * 8) && crest > 3.2 && prev < rms * 0.45 && t - ultimo > 1500 && !hablando
+      if (golpe) { ultimo = t; despertar() } else floor = floor * 0.98 + Math.min(rms, 0.05) * 0.02
+      prev = rms; window.__clap.rms = rms; window.__clap.floor = floor
+    }, 20)
+  } catch { clapIniciado = false }
+}
+function despertar() {
+  if (state.busy) detener()
+  if (SR) escuchaUna(); else { estado('escuchando', 'Dígame'); $('txt').focus() }
+}
 
 arrancar()
