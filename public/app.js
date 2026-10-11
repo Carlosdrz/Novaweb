@@ -55,7 +55,7 @@ function orbe(s) {
   clearTimeout(orbeT)
   if (['escuchando', 'pensando', 'hablando', 'ejecutando'].includes(s)) { o.className = 'orbe on ' + s }
   else if (s === 'error') { o.className = 'orbe on error'; orbeT = setTimeout(() => { o.className = 'orbe' }, 3500) }
-  else { orbeT = setTimeout(() => { o.className = 'orbe' }, 2500) }
+  else { orbeT = setTimeout(() => { o.className = 'orbe' }, 20000) }
 }
 function estado(s, txt) {
   orbe(s); document.body.dataset.estado = s
@@ -222,11 +222,12 @@ function pararEscucha(silencioso) {
 }
 function escuchaUna() {
   if (!SR) return
+  iniciarClap()
   desbloquear(); detener(); pararEscucha(true); modo = 'uno'
   const r = crearRec(false); rec = r; let final = ''
   r.onresult = (e) => { let t = ''; for (const x of e.results) t += x[0].transcript; $('txt').value = t; if (e.results[e.results.length - 1].isFinal) final = t }
   r.onerror = (e) => { if (e.error === 'not-allowed') aviso('Permita el micrófono en el navegador para hablar con Nova.'); else if (e.error !== 'no-speech' && e.error !== 'aborted') aviso('No pude escuchar. Intente de nuevo.') }
-  r.onend = () => { rec = null; micUI(); $('mic').classList.remove('on'); const t = (final || $('txt').value).trim(); $('txt').value = ''; if (t) enviar(t); else if (!state.busy) estado('', 'En línea') }
+  r.onend = () => { rec = null; micUI(); $('mic').classList.remove('on'); if (!state.escucha) setTimeout(() => { if (!rec) detenerClap() }, 400); const t = (final || $('txt').value).trim(); $('txt').value = ''; if (t) enviar(t); else if (!state.busy) estado('', 'En línea') }
   try { r.start(); $('mic').classList.add('on'); estado('escuchando', 'Escuchando'); micUI() } catch { aviso('El micrófono no está disponible.') }
 }
 $('mic').addEventListener('click', iniciarClap)
@@ -270,7 +271,7 @@ function micUI() {
   $('micEstado').classList.toggle('on', on)
   $('micTxt').textContent = rec && modo === 'uno' ? 'Mic activo · lo escucho' : on ? `Mic activo · «${state.nombre}»` : 'Mic apagado'
 }
-function detenerClap() { clearInterval(clapTimer); clapTimer = null; clapStream?.getTracks().forEach((t) => t.stop()); clapStream = null; try { window.__ac?.close() } catch {} clapIniciado = false; micUI() }
+function detenerClap() { window.__micNivel = 0; clearInterval(clapTimer); clapTimer = null; clapStream?.getTracks().forEach((t) => t.stop()); clapStream = null; try { window.__ac?.close() } catch {} clapIniciado = false; micUI() }
 async function iniciarClap() {
   if (clapIniciado || !navigator.mediaDevices?.getUserMedia) return
   clapIniciado = true
@@ -290,6 +291,8 @@ async function iniciarClap() {
       const golpe = rms > Math.max(0.06, floor * 8) && crest > 3.2 && prev < rms * 0.45 && t - ultimo > 1500 && !hablando
       if (golpe) { ultimo = t; despertar() } else floor = floor * 0.98 + Math.min(rms, 0.05) * 0.02
       prev = rms; window.__clap.rms = rms; window.__clap.floor = floor
+      // volumen de su voz respecto al ruido de fondo (0 = silencio, 1 = fuerte): el holograma crece o se achica con él
+      const rel = Math.max(0, Math.min(1, (rms - floor * 1.4 - 0.004) / 0.10)); window.__micNivel = (window.__micNivel ?? 0) * 0.8 + rel * 0.2
     }, 20)
   } catch { clapIniciado = false }
 }

@@ -4,6 +4,7 @@ import { listFacts, rememberFact, editFact, deleteFactAt, listReminders, addRemi
 import { listarNotas, agregarNota, borrarNota, listarTareas, agregarTarea, cambiarTarea, borrarTarea } from './notas.mjs'
 import { guardarConv, leerConv, listarConv, borrarConv } from './conversaciones.mjs'
 import { casaConfigurada } from './casa.mjs'
+import { proveedoresExternos } from './fuentes.mjs'
 
 export async function manejarApi(req, res, url, { json, body, voz }) {
   const p = url.pathname, m = req.method
@@ -12,7 +13,7 @@ export async function manejarApi(req, res, url, { json, body, voz }) {
   const leer = async (max = 16 * 1024) => { try { return await body(req, max) } catch { json(res, 400, { error: 'Solicitud inválida.' }); return null } }
   const fallo = (e) => json(res, 400, { error: e.message })
 
-  if (p === '/api/estado') return json(res, 200, { ajustes: ajustes(), local: LOCAL(), casa: casaConfigurada(), voz, apps: Object.keys(appsDisponibles()), sugeridas: LOCAL() ? carpetasSugeridas() : [], plataforma: process.platform }), true
+  if (p === '/api/estado') return json(res, 200, { ajustes: ajustes(), local: LOCAL(), casa: casaConfigurada(), ias: proveedoresExternos(), voz, apps: Object.keys(appsDisponibles()), sugeridas: LOCAL() ? carpetasSugeridas() : [], plataforma: process.platform }), true
   if (p === '/api/ajustes' && m === 'PUT') { const d = await leer(); if (!d) return true; try { return json(res, 200, guardarAjustes(d)), true } catch (e) { return fallo(e), true } }
   if (p === '/api/actividad') return json(res, 200, { items: actividad(120) }), true
   if (p === '/api/confirmar' && m === 'POST') { const d = await leer(2048); if (!d) return true; return json(res, 200, { ok: responderConfirmacion(d.id, d.ok === true) }), true }

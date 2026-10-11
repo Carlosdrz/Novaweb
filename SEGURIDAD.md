@@ -16,9 +16,14 @@ Este documento solo afirma lo que está implementado y probado. Ningún sistema 
 | Aislamiento de código generado | No aplica todavía: Nova no ejecuta código generado. | — |
 | Servidor local | En modo local solo escucha en 127.0.0.1; las peticiones que cambian algo rechazan orígenes ajenos. | e2e |
 
+## Varias IAs combinadas (consejo)
+
+Para preguntas importantes, Nova consulta en paralelo a: un investigador (Claude + web, con fuentes), un analista, un verificador de riesgos, Wikipedia y, si el servidor tiene `OPENAI_API_KEY` y/o `GEMINI_API_KEY`, OpenAI y Gemini. Cada fuente puede fallar sin afectar a las demás. Nova trata esos borradores como datos no confiables, los contrasta y da una sola respuesta. Se activa o apaga en Herramientas («Consejo de IAs»); gasta más del plan de Claude.
+Verificado: pruebas unitarias con servicios simulados (Wikipedia, Open-Meteo, OpenAI, Gemini) y una prueba real con Claude. OpenAI y Gemini reales no se probaron (no hay claves).
+
 ## Pendiente (no se afirma que exista)
 
-- Proveedor de IA intercambiable (hoy: Claude vía Agent SDK).
+- Proveedor principal intercambiable (hoy el cerebro es Claude; OpenAI/Gemini participan solo como consejeros).
 - Visión por computadora (imágenes/capturas), búsqueda semántica en documentos propios, modo sin conexión.
 - Reglas «cuando ocurra X, haz Y» (hoy: recordatorios y rutinas diarias).
 - Sistema de extensiones con manifiesto (hoy: herramientas internas con permiso, límites y registro).

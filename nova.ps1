@@ -44,12 +44,23 @@ if (-not $env:NOVA_PASSWORD) {
   }
 }
 
+# 4b) Cerrar copias anteriores de Nova que sigan abiertas (si no, el navegador mostraria la version vieja)
+try {
+  $viejos = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'server\.mjs' -and $_.ProcessId -ne $PID }
+  foreach ($v in $viejos) { Stop-Process -Id $v.ProcessId -Force -ErrorAction SilentlyContinue; Write-Host "Cerre una copia anterior de Nova." -ForegroundColor DarkYellow }
+  if ($viejos) { Start-Sleep 1 }
+} catch {}
+
 # 5) Abrir el navegador cuando el servidor responda
 Start-Job -ScriptBlock {
   for ($i = 0; $i -lt 90; $i++) {
-    try { Invoke-WebRequest 'http://localhost:8080/api/ping' -UseBasicParsing -TimeoutSec 2 | Out-Null } catch {
-      if ($_.Exception.Response) { Start-Process 'http://localhost:8080'; break }
+    $listo = $false
+    foreach ($pt in 8080..8089) {
+      try { Invoke-WebRequest "http://localhost:$pt/api/ping" -UseBasicParsing -TimeoutSec 2 | Out-Null } catch {
+        if ($_.Exception.Response) { Start-Process "http://localhost:$pt"; $listo = $true; break }
+      }
     }
+    if ($listo) { break }
     Start-Sleep 1
   }
 } | Out-Null

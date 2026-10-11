@@ -5,7 +5,7 @@
   const orbe = document.getElementById('orbe'); if (!orbe) return
   const cv = document.getElementById('fx'), cx = cv.getContext('2d')
   const imgA = orbe.querySelector('.capa.a'), imgB = orbe.querySelector('.capa.b')
-  let estado = 'reposo', activo = false, raf = 0, t0 = performance.now(), W = 0, H = 0
+  let esc = 0.94, estado = 'reposo', activo = false, raf = 0, t0 = performance.now(), W = 0, H = 0
   const P = { velAnillo: 0.2, energia: 0.15, tono: 200, brillo: 1 }
   const META = {
     reposo:    { velAnillo: 0.15, energia: 0.12, tono: 200 },
@@ -61,11 +61,14 @@
     const m = META[estado] || META.reposo, k = 1 - Math.pow(0.001, dt)
     for (const q in m) P[q] += (m[q] - P[q]) * Math.min(1, k * 2.2)
     const lv = nivel(t), E = P.energia
+    // tamaño según volumen: su voz (micrófono) o la de Nova. Silencio = un poco más pequeño; fuerte = más grande.
+    const mic = Math.max(0, Math.min(1, window.__micNivel ?? 0)), objetivo = 0.88 + 0.34 * Math.max(mic, lv * 0.9)
+    esc += (objetivo - esc) * Math.min(1, dt * 7)
     if (!drag) { spin += vel * dt; vel *= Math.pow(0.12, dt) }
     giro += dt * P.velAnillo * 0.25; giro2 -= dt * (0.04 + P.velAnillo * 0.18); fase += dt * (1 + E * 3)
-    imgA.style.transform = `rotate(${(giro * 0.35 + spin) * 57.3}deg) scale(${1 + 0.02 * Math.sin(t * 1.3) + lv * 0.05 + (estado === 'pensando' ? 0.02 * Math.sin(t * 7) : 0)})`
-    imgB.style.transform = `rotate(${(giro2 - spin * 0.6) * 57.3}deg) scale(1.1)`
-    cv.style.transform = `rotate(${spin * 57.3 * 0.5}deg)`
+    imgA.style.transform = `rotate(${(giro * 0.35 + spin) * 57.3}deg) scale(${(1 + 0.02 * Math.sin(t * 1.3) + (estado === 'pensando' ? 0.02 * Math.sin(t * 7) : 0)) * esc})`
+    imgB.style.transform = `rotate(${(giro2 - spin * 0.6) * 57.3}deg) scale(${1.1 * esc})`
+    cv.style.transform = `rotate(${spin * 57.3 * 0.5}deg) scale(${esc})`
     imgA.style.filter = `hue-rotate(${P.tono - 200}deg) brightness(${1 + E * 0.18 + lv * 0.25}) saturate(${1 + E * 0.25})`
     imgB.style.filter = `hue-rotate(${P.tono - 200}deg)`
     resize(); const R = W / 2, c = R

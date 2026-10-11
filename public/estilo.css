@@ -116,15 +116,17 @@ select{color-scheme:dark}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-/* Orbe de Nova: holograma animado, aparece al preguntar o aplaudir */
-.orbe{position:absolute;left:50%;top:42%;width:min(92%,640px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.8);opacity:0;pointer-events:none;z-index:-1;transition:opacity .6s ease,transform .8s cubic-bezier(.2,.8,.2,1);
-  -webkit-mask-image:radial-gradient(circle,#000 54%,transparent 71%);mask-image:radial-gradient(circle,#000 54%,transparent 71%);mix-blend-mode:screen}
-.orbe .capa{position:absolute;inset:0;width:100%;height:100%;display:block;will-change:transform}
+/* Orbe de Nova: holograma arriba (escenario) y el texto sale debajo. Aparece al preguntar o aplaudir. */
+.escenario{position:relative;flex:none;height:0;transition:height .7s cubic-bezier(.2,.8,.2,1);z-index:1}
+.centro:has(.orbe.on) .escenario{height:clamp(250px,50vh,620px)}
+.orbe{position:absolute;left:50%;top:50%;height:110%;aspect-ratio:1;transform:translate(-50%,-50%) scale(.8);opacity:0;pointer-events:none;transition:opacity .6s ease,transform .8s cubic-bezier(.2,.8,.2,1);mix-blend-mode:screen}
+.orbe .capa{position:absolute;inset:0;width:100%;height:100%;display:block;will-change:transform;-webkit-mask-image:radial-gradient(circle,#000 56%,transparent 76%);mask-image:radial-gradient(circle,#000 56%,transparent 76%)}
 .orbe .capa.b{opacity:.5;mix-blend-mode:screen}
-.orbe canvas{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:screen}
-.orbe.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
-.centro:has(.orbe.on) .vacio{opacity:0;transition:opacity .4s}
-
+.orbe canvas{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:screen;-webkit-mask-image:radial-gradient(circle,#000 56%,transparent 76%);mask-image:radial-gradient(circle,#000 56%,transparent 76%)}
+.orbe.on{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto;cursor:grab;touch-action:none}
+.orbe.on.arrastra{cursor:grabbing}
+.log{padding:6px 4px 0;max-width:860px;width:100%;align-self:center}
+.msg,.tool{max-width:100%}
 /* logo en movimiento y orbe táctil */
 .logo .anillo{transform-box:fill-box;transform-origin:center}
 body[data-estado=escuchando] .logo .anillo{animation:giro 2.2s linear infinite}
@@ -133,7 +135,3 @@ body[data-estado=hablando] .logo .anillo{animation:giro 3.5s linear infinite}
 body[data-estado=pensando] .logo,body[data-estado=ejecutando] .logo,body[data-estado=hablando] .logo,body[data-estado=escuchando] .logo{filter:drop-shadow(0 0 6px var(--luz))}
 body[data-estado=hablando] .logo{animation:latido 1s ease-in-out infinite}
 @keyframes giro{to{transform:rotate(360deg)}}@keyframes latido{50%{transform:scale(1.12)}}
-.log{pointer-events:none}.msg,.tool,.vacio,.log .rep{pointer-events:auto}
-.orbe.on{pointer-events:auto;cursor:grab;touch-action:none;-webkit-mask-image:none;mask-image:none}
-.orbe.on.arrastra{cursor:grabbing}
-.orbe .capa,.orbe canvas{-webkit-mask-image:radial-gradient(circle,#000 54%,transparent 71%);mask-image:radial-gradient(circle,#000 54%,transparent 71%)}

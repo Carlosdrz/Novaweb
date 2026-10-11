@@ -34,7 +34,7 @@ export const APPS_LINUX = { calculadora: 'gnome-calculator', 'editor de texto': 
 export const appsDisponibles = () => (process.platform === 'win32' ? APPS_WIN : process.platform === 'darwin' ? APPS_MAC : APPS_LINUX)
 
 const DEFAULTS = {
-  permisos: { web: true, agenda: true, memoria: true, notas: true, abrirUrls: false, abrirApps: false, buscarArchivos: false, leerArchivos: false, crearArchivos: false, casa: false },
+  permisos: { web: true, consejo: true, agenda: true, memoria: true, notas: true, abrirUrls: false, abrirApps: false, buscarArchivos: false, leerArchivos: false, crearArchivos: false, casa: false },
   carpetas: [],            // carpetas que Nova puede mirar (solo si buscar/leer está activo)
   apps: [],                // nombres de aplicaciones permitidas
   nombre: 'Nova',          // palabra de activación

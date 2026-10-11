@@ -60,6 +60,7 @@
   // ---- permisos (interruptores compartidos por Memoria y Herramientas)
   const PERMISOS = [
     ['web', 'Internet', 'Buscar y leer páginas web para responder con datos actuales.', 'Requiere internet'],
+    ['consejo', 'Consejo de IAs', 'Para preguntas importantes, consulta en paralelo a varios especialistas (investigador web, analista, verificador de riesgos, Wikipedia y otras IAs conectadas) y combina lo mejor. Gasta más de su plan de Claude y tarda unos segundos más.', 'Requiere internet'],
     ['agenda', 'Recordatorios', 'Programar recordatorios y rutinas que Nova dice en voz alta.', 'Local'],
     ['memoria', 'Memoria', 'Recordar lo que usted autoriza guardar.', 'Local'],
     ['notas', 'Notas y tareas', 'Crear y consultar notas y listas de tareas.', 'Local'],
@@ -147,7 +148,7 @@
       if (!e.local) ap.append(el('p', 'sub peq', 'Disponible al ejecutar Nova en su computadora.'))
       else for (const n of e.apps) { const lab = el('label'), i = el('input'); i.type = 'checkbox'; i.checked = a.apps.includes(n); i.onchange = () => guardarAjustes({ apps: e.apps.filter((x) => (x === n ? i.checked : a.apps.includes(x))) }); lab.append(i, el('span', '', n)); ap.append(lab) }
       const lc2 = $('lCon'); lc2.replaceChildren()
-      for (const [n, v] of [['Claude (cerebro)', 'sesión del servidor'], ['Voz de ElevenLabs', e.voz ? 'conectada' : 'no configurada: usa la voz del navegador'], ['Home Assistant', e.casa ? 'conectado' : 'no configurado'], ['Control del equipo', e.local ? 'disponible' : 'no disponible en esta instalación']]) { const f = el('li', 'fila-item'); const t = el('div', 't', n); t.append(el('small', '', v)); f.append(t); lc2.append(f) }
+      for (const [n, v] of [['Claude (cerebro)', 'sesión del servidor'], ['Voz de ElevenLabs', e.voz ? 'conectada' : 'no configurada: usa la voz del navegador'], ['Otras IAs (OpenAI / Gemini)', e.ias.length ? 'conectadas: ' + e.ias.join(', ') : 'sin clave: el consejo usa solo Claude + Wikipedia'], ['Home Assistant', e.casa ? 'conectado' : 'no configurado'], ['Control del equipo', e.local ? 'disponible' : 'no disponible en esta instalación']]) { const f = el('li', 'fila-item'); const t = el('div', 't', n); t.append(el('small', '', v)); f.append(t); lc2.append(f) }
     } catch (x) { alFallar(x) }
   }
   async function guardarAjustes(p) { try { N.aplicarAjustes(await api('/api/ajustes', { method: 'PUT', body: JSON.stringify(p) })); pintarConf() } catch (e) { alFallar(e) } }
