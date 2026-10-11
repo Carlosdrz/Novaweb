@@ -152,6 +152,8 @@
     } catch (x) { alFallar(x) }
   }
   async function guardarAjustes(p) { try { N.aplicarAjustes(await api('/api/ajustes', { method: 'PUT', body: JSON.stringify(p) })); pintarConf() } catch (e) { alFallar(e) } }
+  $('fClaves').addEventListener('submit', async (e) => { e.preventDefault(); const d = {}; for (const [k, id] of [['gemini', 'kGemini'], ['openai', 'kOpenai'], ['eleven', 'kEleven'], ['voiceId', 'kVoz']]) { const v = $(id).value.trim(); if (v) d[k] = v }
+    if (!Object.keys(d).length) return; try { await api('/api/claves', { method: 'PUT', body: JSON.stringify(d) }); for (const id of ['kGemini', 'kOpenai', 'kEleven', 'kVoz']) $(id).value = ''; N.state.serverVoz = true; pintarConf(); N.aviso?.('Claves guardadas.') } catch (x) { alFallar(x) } })
   $('cfgNombre').addEventListener('change', () => guardarAjustes({ nombre: $('cfgNombre').value }))
   $('cfgIdioma').addEventListener('change', () => guardarAjustes({ idioma: $('cfgIdioma').value }))
   $('cfgVoz').addEventListener('change', () => guardarAjustes({ voz: $('cfgVoz').checked }))

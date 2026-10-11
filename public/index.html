@@ -49,7 +49,7 @@
 
   <section id="v-inicio" class="vista centro on">
     <div id="escenario" class="escenario">
-      <div id="orbe" class="orbe" aria-hidden="true"><img class="capa b" src="/orbe.webp" alt=""><img class="capa a" src="/orbe.webp" alt=""><canvas id="fx"></canvas></div>
+      <div id="orbe" class="orbe" aria-hidden="true"><canvas id="fx"></canvas></div>
     </div>
     <div id="log" class="log" aria-live="polite"></div>
     <p id="aviso" class="aviso" role="alert" hidden></p>
@@ -104,6 +104,8 @@
       <div class="caja"><h2>Carpetas autorizadas</h2><p class="sub peq">Solo si activa «Buscar» o «Leer archivos». Nova no sale de estas carpetas.</p><ul id="lCarp" class="items"></ul><div id="sugCarp" class="fila wrap"></div><form id="fCarp" class="fila"><input id="carpTxt" placeholder="Ruta de la carpeta"><button class="btn">Añadir</button></form></div>
       <div class="caja"><h2>Aplicaciones autorizadas</h2><p class="sub peq">Nova solo abre las que marque.</p><div id="lApps" class="checks"></div></div>
       <div class="caja"><h2>Conexiones</h2><ul id="lCon" class="items"></ul></div>
+      <div class="caja"><h2>Claves de IA y voz</h2><p class="sub peq">Péguelas aquí una vez; se guardan solo en este servidor y nunca se muestran de nuevo. Gemini (Google) y OpenAI (ChatGPT) responden al instante y respaldan a Claude.</p>
+        <form id="fClaves" class="fila" autocomplete="off"><input id="kGemini" type="password" placeholder="Clave de Gemini (Google AI Studio)"><input id="kOpenai" type="password" placeholder="Clave de OpenAI (ChatGPT)"><input id="kEleven" type="password" placeholder="Clave de ElevenLabs"><input id="kVoz" type="text" placeholder="ID de voz de ElevenLabs (estilo Jarvis)"><button class="btn">Guardar claves</button></form></div>
     </div>
     <p class="sub peq">Las claves (Claude, ElevenLabs, Gmail, Home Assistant) viven solo en el servidor; esta página nunca las ve.</p>
   </section>
@@ -112,6 +114,7 @@
 <div id="modal" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="mTit" aria-describedby="mDet">
   <div class="mcaja"><h2 id="mTit">Confirmar</h2><p id="mDet"></p><div class="fila fin"><button id="mNo" class="btn sec">Denegar</button><button id="mSi" class="btn">Permitir</button></div></div>
 </div>
+<script src="/holo.js"></script>
 <script src="/orbe.js"></script>
 <script src="/app.js"></script>
 <script src="/vistas.js"></script>

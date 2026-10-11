@@ -19,6 +19,7 @@ async function arrancar() {
   cargarRecs(); setInterval(avisar, 15000); avisar()
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { avisar(); cargarRecs() } })
   document.addEventListener('pointerdown', desbloquear, { once: true })
+  try { if ('Notification' in window && Notification.permission === 'default') document.addEventListener('pointerdown', () => Notification.requestPermission(), { once: true }) } catch {}
   // Micrófono: si ya está permitido (o lo dejó activado), Nova escucha su nombre sin más pasos.
   let apagado = false; try { apagado = localStorage.getItem('nova-escucha') === '0' } catch {}
   if (SR && !apagado) activarEscucha(true)
@@ -36,7 +37,7 @@ async function avisar() {
     const r = await fetch('/api/avisos'); if (!r.ok) return
     if ($('punto').className.includes('error') && !state.busy) estado('', 'En línea')
     const { avisos } = await r.json()
-    for (const a of avisos) { burbuja('nova', a.text); decirYa(a.text) }
+    for (const a of avisos) { burbuja('nova', a.text); decirYa(a.text); try { if (document.hidden && Notification.permission === 'granted') new Notification('Nova', { body: a.text, icon: '/icono.svg' }) } catch {} }
     if (avisos.length) cargarRecs()
   } catch { if (!state.busy) estado('error', 'Sin conexión') }
 }
@@ -63,7 +64,7 @@ function orbe(s) {
   clearTimeout(orbeT)
   if (['escuchando', 'pensando', 'hablando', 'ejecutando'].includes(s)) { o.className = 'orbe on ' + s }
   else if (s === 'error') { o.className = 'orbe on error'; orbeT = setTimeout(() => { o.className = 'orbe' }, 3500) }
-  else { orbeT = setTimeout(() => { o.className = 'orbe' }, 20000) }
+  else { orbeT = setTimeout(() => { o.className = 'orbe'; try { window.novaForma?.('esfera') } catch {} }, 20000) }
 }
 function estado(s, txt) {
   orbe(s); document.body.dataset.estado = s
@@ -109,12 +110,12 @@ function desbloquear() {
 }
 function vozEs() {
   const en = state.lang.startsWith('en'), vs = speechSynthesis.getVoices().filter((v) => (en ? /^en/i : /^es/i).test(v.lang))
-  return vs.find((v) => (en ? /en-US/i : /es-(DO|MX|US|419)/i).test(v.lang)) || vs[0] || null
+  const h = /jorge|diego|pablo|raul|raúl|enrique|alvaro|álvaro|juan|male|hombre|daniel|arthur|george|oliver/i; return vs.find((v) => (en ? /en-GB/i : /es-(DO|MX|US|419)/i).test(v.lang) && h.test(v.name)) || vs.find((v) => h.test(v.name)) || vs.find((v) => (en ? /en-GB|en-US/i : /es-(DO|MX|US|419)/i).test(v.lang)) || vs[0] || null
 }
 function sintetizar(texto, g) {
   return new Promise((ok) => {
     try {
-      const u = new SpeechSynthesisUtterance(texto); u.lang = state.lang; const v = vozEs(); if (v) u.voice = v
+      const u = new SpeechSynthesisUtterance(texto); u.lang = state.lang; u.pitch = 0.82; u.rate = 0.97; const v = vozEs(); if (v) u.voice = v
       u.onend = u.onerror = () => ok(); speechSynthesis.speak(u)
     } catch { ok() }
   })
@@ -149,7 +150,7 @@ async function enviar(texto) {
   texto = texto.trim(); if (!texto) return
   if (state.busy) detener()
   aviso(''); callar()
-  state.msgs.push({ role: 'user', content: texto }); burbuja('user', texto)
+  state.msgs.push({ role: 'user', content: texto }); burbuja('user', texto); try { window.novaTema?.(texto) } catch {}
   $('cuenta').textContent = state.msgs.length
   const b = burbuja('n', ''); b.classList.add('act')
   state.busy = true; $('enviar').hidden = true; $('parar').hidden = false; estado('pensando', 'Pensando')
