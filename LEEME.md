@@ -8,6 +8,10 @@ Se entra con contraseña. Use su plan solo para usted: no comparta el enlace ni 
 
 ## 1. Probarla primero en su computadora (2 minutos)
 
+Lo más fácil: instale Node.js (nodejs.org, versión LTS), descomprima el ZIP y haga doble clic en **Iniciar Nova.bat** (Windows) o **Iniciar Nova.command** (Mac). Pide una contraseña, instala lo necesario y abre Nova en el navegador. Requiere haber iniciado sesión en Claude Code (`claude`).
+
+O a mano:
+
 Requisitos: Node 20.19 o superior (nodejs.org) y haber iniciado sesión una vez con `claude` (Claude Code).
 
     npm install
