@@ -52,3 +52,7 @@ Render plan Starter (unos 7 USD al mes): siempre encendido y con disco, para que
 
 - Carpeta `knowledge/`: ponga ahí archivos `.md`, `.txt`, `.csv` o `.json` con sus datos (horarios, contactos, apuntes). Nova los consulta antes de responder. Se suben con el repositorio.
 - Titulares diarios: Nova trae cada 6 horas noticias de BBC Mundo, DW, Diario Libre, Listín Diario, Xataka y NASA. Cambie las fuentes con `NOVA_FUENTES`; apáguelo con `NOVA_NOTICIAS=off`.
+
+## Entrar con un enlace (sin carpeta ni ventana negra)
+Publicar Nova en la nube con un clic: https://render.com/deploy?repo=https://github.com/Carlosdrz/Novaweb
+Render pide la contraseña de Nova (`NOVA_PASSWORD`, mínimo 8 caracteres) y las claves opcionales (ElevenLabs, Gemini, OpenAI). El plan «starter» es de pago y mantiene Nova siempre encendida.
