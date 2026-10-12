@@ -85,6 +85,31 @@ export async function manejarApi2(req, res, url, { json, body, runner }) {
       const med = (k) => { const v = l.map((x) => x[k]).filter((x) => x != null).sort((a, b) => a - b); return v.length ? { mediana: v[Math.floor(v.length / 2)], n: v.length, p90: v[Math.floor(v.length * 0.9)] } : null }
       return json(res, 200, { token: med('token'), audio: med('audio'), total: med('total') }), true
     }
+    // ---- selector de voces: opciones sugeridas + biblioteca de la cuenta de ElevenLabs
+    if (p === '/api/voces' && m === 'GET') {
+      const key = process.env.ELEVENLABS_API_KEY, actual = process.env.NOVA_VOICE_ID ?? 'ojGau167OE7nUATM1xDa'
+      const opciones = [
+        { id: 'ErXwobaYiN019PkySvjV', nombre: 'Antoni', desc: 'Cálida y equilibrada, tono medio' },
+        { id: 'TxGEqnHWrfWTfGW9XjHN', nombre: 'Josh', desc: 'Cercana y natural, algo más joven' },
+        { id: 'JBFqnCBsd6RMkjVDRZzb', nombre: 'George', desc: 'Madura y amable, voz de narrador' },
+        { id: 'onwK4e9ZLuTAKqWW03F9', nombre: 'Daniel', desc: 'Formal y serena, estilo mayordomo' },
+      ]
+      let biblioteca = []
+      if (key) { try { const r = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key }, signal: AbortSignal.timeout(8000) }); if (r.ok) biblioteca = ((await r.json()).voices ?? []).map((v) => ({ id: v.voice_id, nombre: String(v.name ?? '').slice(0, 60), desc: [v.labels?.gender, v.labels?.age, v.labels?.accent, v.labels?.descriptive || v.labels?.description].filter(Boolean).join(' · ').slice(0, 100) })).filter((v) => /^[A-Za-z0-9]{10,40}$/.test(v.id)).sort((a, b) => /marcos/i.test(b.nombre) - /marcos/i.test(a.nombre)).slice(0, 60) } catch {} }
+      return json(res, 200, { tieneClave: Boolean(key), actual, opciones, biblioteca }), true
+    }
+    if (p === '/api/voces/probar' && m === 'POST') {
+      const d = await leer(1024); if (!d) return true
+      const key = process.env.ELEVENLABS_API_KEY, id = String(d.id ?? '')
+      if (!key) return json(res, 400, { error: 'Falta la clave de ElevenLabs.' }), true
+      if (!/^[A-Za-z0-9]{10,40}$/.test(id)) return json(res, 400, { error: 'Voz no válida.' }), true
+      try {
+        const up = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${id}?output_format=mp3_44100_64`, { method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'xi-api-key': key, 'content-type': 'application/json' }, body: JSON.stringify({ text: 'Buenas tardes, señor Carlos. Soy Nova. Estoy lista para ayudarle con lo que necesite.', model_id: 'eleven_multilingual_v2', language_code: 'es', voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.1 } }) })
+        if (!up.ok) return json(res, 502, { error: up.status === 401 ? 'La clave de ElevenLabs no es válida.' : 'Esa voz no está disponible en su cuenta.' }), true
+        const buf = Buffer.from(await up.arrayBuffer()); res.writeHead(200, { 'content-type': 'audio/mpeg', 'cache-control': 'no-store', 'content-length': buf.length }); res.end(buf)
+      } catch (e) { json(res, 502, { error: 'No se pudo conectar con ElevenLabs.' }) }
+      return true
+    }
     // ---- verificación de la voz de ElevenLabs
     if (p === '/api/voz' && m === 'GET') {
       const key = process.env.ELEVENLABS_API_KEY, id = process.env.NOVA_VOICE_ID ?? 'ojGau167OE7nUATM1xDa'

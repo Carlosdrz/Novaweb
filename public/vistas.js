@@ -133,6 +133,7 @@
       else for (const n of e.apps) { const lab = el('label'), i = el('input'); i.type = 'checkbox'; i.checked = a.apps.includes(n); i.onchange = () => guardarAjustes({ apps: e.apps.filter((x) => (x === n ? i.checked : a.apps.includes(x))) }); lab.append(i, el('span', '', n)); ap.append(lab) }
       const vz = await api('/api/voz').catch(() => null); const kc = await api('/api/claves').catch(() => null)
       if (kc) { $('vEstab').value = kc.vozParams.estab; $('vSim').value = kc.vozParams.sim; $('vEstilo').value = kc.vozParams.estilo; $('vVel').value = kc.vozParams.vel }
+      N.pintarVoces?.()
       const lc2 = $('lCon'); lc2.replaceChildren()
       for (const [n, v] of [['Claude (cerebro)', 'sesión del servidor'], ['Voz de ElevenLabs', vz ? (vz.ok ? 'conectada: ' + (vz.nombre || vz.id) : vz.motivo) : 'comprobando…'], ['Otras IAs (OpenAI / Gemini)', e.ias.length ? 'conectadas: ' + e.ias.join(', ') : 'sin clave: el consejo usa solo Claude + Wikipedia'], ['Videos (YouTube)', kc?.youtube ? 'conectado' : 'sin clave: usa Wikimedia Commons y un enlace a YouTube'], ['Imágenes', 'Wikimedia Commons y Openverse (licencias abiertas)'], ['Home Assistant', e.casa ? 'conectado' : 'no configurado'], ['Control del equipo', e.local ? 'disponible' : 'no disponible en esta instalación']]) { const f = el('li', 'fila-item'); const t = el('div', 't', n); t.append(el('small', '', v)); f.append(t); lc2.append(f) }
     } catch (x) { alFallar(x) }

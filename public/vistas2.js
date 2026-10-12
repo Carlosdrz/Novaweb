@@ -183,4 +183,27 @@
     pintar()
   }
   window.Nova.cargarRecs?.()
+
+  // ================= elegir voz =================
+  let audioPrueba = null
+  N.pintarVoces = async () => {
+    const l = $('listaVoces'); if (!l) return; l.replaceChildren(el('p', 'sub peq', 'Cargando voces…'))
+    let d; try { d = await api('/api/voces') } catch (e) { l.replaceChildren(el('p', 'errMed', e.message)); return }
+    l.replaceChildren()
+    const fila = (v, extra) => {
+      const f = el('div', 'fila-item'), t = el('div', 't'); t.append(el('b', '', v.nombre + (v.id === d.actual ? '  ✓ en uso' : '')), el('small', '', v.desc || extra || ''))
+      const acc = el('div', 'acc')
+      acc.append(btn('Probar', async (ev) => {
+        const b = ev.target; b.disabled = true; b.textContent = 'Cargando…'
+        try { const r = await fetch('/api/voces/probar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: v.id }) }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No se pudo probar.'); const u = URL.createObjectURL(await r.blob()); audioPrueba?.pause(); audioPrueba = new Audio(u); await audioPrueba.play() } catch (e) { err(e) }
+        b.disabled = false; b.textContent = 'Probar'
+      }))
+      acc.append(btn('Usar', async () => { try { await api('/api/claves', { method: 'PUT', body: JSON.stringify({ voiceId: v.id }) }); N.aviso?.('Voz cambiada a ' + v.nombre + '.'); N.pintarVoces() } catch (e) { err(e) } }, v.id === d.actual ? '' : 'pel'))
+      f.append(t, acc); return f
+    }
+    if (!d.tieneClave) l.append(el('p', 'sub', 'Primero pegue su clave de ElevenLabs más abajo, en «Claves de IA y voz».'))
+    l.append(el('h3', 'sub', 'Opciones sugeridas'))
+    for (const v of d.opciones) l.append(fila(v))
+    if (d.biblioteca.length) { l.append(el('h3', 'sub', 'Su biblioteca de ElevenLabs')); for (const v of d.biblioteca) l.append(fila(v)) }
+  }
 })()

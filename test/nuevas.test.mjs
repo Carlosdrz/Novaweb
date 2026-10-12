@@ -87,3 +87,13 @@ test('vía rápida: transmite Gemini y cae a ChatGPT si falla', async () => {
   assert.equal(via, 'ChatGPT'); assert.equal(txt, 'Hola Señor.')
   srv.closeAllConnections?.(); srv.close()
 })
+
+test('selector de voces: sin clave lista opciones; con clave prueba y valida el id', async () => {
+  const { manejarApi2 } = await import('../api2.mjs')
+  const mk = (method, path, bodyObj) => { const out = { code: 0, data: null }; const res = { writeHead(c) { out.code = c }, end(b) { out.raw = b }, on() {} }; const json = (r, c, d) => { out.code = c; out.data = d }; return { out, run: () => manejarApi2({ method }, res, new URL('http://x' + path), { json, body: async () => bodyObj, runner: null }) } }
+  delete process.env.ELEVENLABS_API_KEY
+  let t = mk('GET', '/api/voces'); await t.run(); assert.equal(t.out.data.tieneClave, false); assert.equal(t.out.data.opciones.length, 4)
+  t = mk('POST', '/api/voces/probar', { id: 'abc' }); await t.run(); assert.equal(t.out.code, 400)
+  process.env.ELEVENLABS_API_KEY = 'k'; t = mk('POST', '/api/voces/probar', { id: '../etc' }); await t.run(); assert.equal(t.out.code, 400)
+  delete process.env.ELEVENLABS_API_KEY
+})
