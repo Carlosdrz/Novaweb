@@ -3,8 +3,6 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;overflow-x:hidden}
 body{background:
- linear-gradient(rgba(79,214,255,.04) 1px,transparent 1px) 0 0/48px 48px,
- linear-gradient(90deg,rgba(79,214,255,.04) 1px,transparent 1px) 0 0/48px 48px,
  radial-gradient(120% 70% at 50% -10%,#0a2540 0%,var(--bg) 62%);
  color:var(--txt);font:16px/1.5 var(--cuerpo)}
 [hidden]{display:none!important}
@@ -205,6 +203,4 @@ textarea{background:var(--panel);border:1px solid var(--borde);border-radius:8px
 /* Fondo gris del sistema (los hologramas conservan su forma y color) */
 :root{--bg:#2b2f34;--panel:#33383e;--panel2:#3a4047;--borde:#566069;--bosque:#48525c;--txt:#e6ebef;--tenue:#a3adb5}
 body{background:
- linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px) 0 0/48px 48px,
- linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/48px 48px,
  radial-gradient(120% 70% at 50% -10%,#444a51 0%,var(--bg) 62%)}
